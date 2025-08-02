@@ -1,0 +1,1015 @@
+openapi: 3.1.0
+info:
+  title: Spec Workflow API
+  version: 1.0.0
+  description: Intelligent Requirements Document Workflow API Specification
+
+servers:
+  - url: mcp://spec-workflow
+
+# All operation definitions
+paths:
+  /spec:
+    post:
+      operationId: executeWorkflow
+      summary: Execute workflow operation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkflowRequest'
+      responses:
+        '200':
+          description: Operation successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkflowResponse'
+
+# Data model definitions
+components:
+  schemas:
+    # Request definitions
+    WorkflowRequest:
+      type: object
+      required: [path, action]
+      properties:
+        path:
+          type: string
+          description: Specification directory path (e.g., /Users/link/specs-mcp/batch-log-test)
+        action:
+          $ref: '#/components/schemas/Action'
+    
+    Action:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+          enum: [init, check, skip, confirm, complete_task]
+        featureName:
+          type: string
+          description: Feature name (required for init)
+        introduction:
+          type: string
+          description: Feature introduction (required for init)
+        taskNumber:
+          type: string
+          description: Task number to mark as completed (required for complete_task)
+      
+    # Response definitions
+    WorkflowResponse:
+      type: object
+      required: [result]
+      properties:
+        result:
+          oneOf:
+            - $ref: '#/components/schemas/InitResponse'
+            - $ref: '#/components/schemas/CheckResponse'
+            - $ref: '#/components/schemas/SkipResponse'
+            - $ref: '#/components/schemas/ConfirmResponse'
+            - $ref: '#/components/schemas/CompleteTaskResponse'
+    
+    # Initialization response
+    InitResponse:
+      type: object
+      required: [success, data, displayText]
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            path:
+              type: string
+            featureName:
+              type: string
+            nextAction:
+              type: string
+              const: edit_requirements
+        displayText:
+          type: string
+        resources:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceRef'
+      examples:
+        - success: true
+          data:
+            path: /specs/new-feature
+            featureName: New Feature
+            nextAction: edit_requirements
+          displayText: |
+            ✅ ${featureName} initialized successfully!
+
+            📁 File directory: ${path}
+            📝 Created: requirements.md
+            
+            📊 Overall progress: ${progress}%
+            🔄 Current status: Initialization successful (current) → Next step: write requirements document
+
+            Model please continue with the following actions:
+            1. Read the requirements-guide below
+            2. First read ${path}/requirements.md, then start writing the document
+            3. After completing the document, use specs-workflow tool with action.type="check" to check the document format
+            4. When check passes, the model must ask the user "Do the requirements look good?", and must not proceed to the design document until getting explicit approval (e.g., "yes", "approved", "looks good", etc.)
+            5. When the user approves, the model must use the specs-workflow tool with action.type="confirm" to enter the design phase
+            
+            Special case - Skip requirements phase:
+            - Only consider skipping when user explicitly requests (e.g., "skip requirements document", "go directly to design")
+            - Before executing skip operation, the model must:
+              1. Explain to user this is an unconventional operation, requirements document is the foundation of the entire development process
+              2. Clearly state the risks: design may deviate from actual requirements, increasing rework costs
+              3. Ask the user: "Understanding these risks, are you sure you want to skip the requirements phase?"
+              4. Only use action.type="skip" after user explicitly confirms
+          resources:
+            - ref: requirements-guide
+    
+    # Check response
+    CheckResponse:
+      type: object
+      required: [stage, progress, status, displayText]
+      properties:
+        stage:
+          $ref: '#/components/schemas/Stage'
+        progress:
+          $ref: '#/components/schemas/Progress'
+        status:
+          $ref: '#/components/schemas/Status'
+        displayText:
+          type: string
+        resources:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceRef'
+      examples:
+        - stage: requirements
+          progress:
+            overall: 0
+            requirements: 0
+            design: 0
+            tasks: 0
+          status:
+            type: not_edited
+            reason: Requirements document not edited
+          displayText: |
+            📝 requirements.md has not been written yet
+            
+            📁 File directory: ${path}
+            📝 Created: requirements.md
+            
+            📊 Overall progress: ${progress}%
+            🔄 Current status: Writing requirements document (current) → Next step: use check to verify format
+            
+            Model please continue with the following actions:
+            1. Read the requirements-guide below
+            2. First read ${path}/requirements.md, then start writing the document
+            3. After completing the document, use specs-workflow tool with action.type="check" to check the document format
+            4. When check passes, the model must ask the user "Do the requirements look good?", and must not proceed to the design document until getting explicit approval (e.g., "yes", "approved", "looks good", etc.)
+            5. When the user approves, the model must use the specs-workflow tool with action.type="confirm" to enter the design phase
+            
+            Special case - Skip requirements phase:
+            - Only consider skipping when user explicitly requests (e.g., "skip requirements document", "go directly to design")
+            - Before executing skip operation, the model must:
+              1. Explain to user this is an unconventional operation, requirements document is the foundation of the entire development process
+              2. Clearly state the risks: design may deviate from actual requirements, increasing rework costs
+              3. Ask the user: "Understanding these risks, are you sure you want to skip the requirements phase?"
+              4. Only use action.type="skip" after user explicitly confirms
+          resources:
+            - ref: requirements-guide
+        
+        - stage: requirements
+          progress:
+            overall: 30
+            requirements: 100
+            design: 0
+            tasks: 0
+          status:
+            type: ready_to_confirm
+            readyToConfirm: true
+          displayText: |
+            ✅ Requirements document check passed!
+            
+            📊 Overall progress: ${progress}%
+            🔄 Current status: Checking requirements document (current) → Next step: get user approval
+            
+            Model please continue with the following actions:
+            1. Ask the user "Do the requirements look good?"
+            2. Wait for explicit user approval (e.g., "yes", "approved", "looks good", etc.)
+            3. After approval, use the specs-workflow tool with action.type="confirm"
+            4. Enter the design phase
+        
+        - stage: design
+          progress:
+            overall: 30
+            requirements: 100
+            design: 0
+            tasks: 0
+          status:
+            type: not_edited
+            reason: Design document not edited
+          displayText: |
+            📝 design.md has not been written yet
+            
+            📁 File directory: ${path}
+            📝 Created: design.md
+            
+            📊 Overall progress: ${progress}%
+            🔄 Current status: Writing design document (current) → Next step: use check to verify format
+            
+            Model please continue with the following actions:
+            1. Read the design-guide below
+            2. First read ${path}/design.md, then start writing the document
+            3. After completing the document, use specs-workflow tool with action.type="check" to check the document format
+            4. When check passes, the model must ask the user "Does the design look good?", and must not proceed to task writing until getting explicit approval (e.g., "yes", "approved", "looks good", etc.)
+            5. When the user approves, the model must use the specs-workflow tool with action.type="confirm" to enter the tasks phase
+            
+            Special case - Skip design phase:
+            - Only consider skipping when user explicitly requests (e.g., "skip design document", "go directly to tasks")
+            - Before executing skip operation, the model must:
+              1. Explain to user this is an unconventional operation, design document helps better plan implementation
+              2. Clearly state the risks:
+                 - May not fully utilize existing features and components
+                 - Implementation direction may deviate from best practices
+                 - Code structure may lack overall planning
+              3. Ask the user: "Understanding these risks, are you sure you want to skip the design phase?"
+              4. Only use action.type="skip" after user explicitly confirms
+          resources:
+            - ref: design-guide
+            
+        - stage: design
+          progress:
+            overall: 60
+            requirements: 100
+            design: 100
+            tasks: 0
+          status:
+            type: ready_to_confirm
+            readyToConfirm: true
+          displayText: |
+            ✅ Design document check passed!
+            
+            📊 Overall progress: ${progress}%
+            🔄 Current status: Checking design document (current) → Next step: get user approval
+            
+            Model please continue with the following actions:
+            1. Ask the user "Does the design look good?"
+            2. Wait for explicit user approval (e.g., "yes", "approved", "looks good", etc.)
+            3. Must not proceed to task writing until getting explicit approval
+            4. After approval, use the specs-workflow tool with action.type="confirm"
+            5. Enter the tasks phase
+            
+        - stage: tasks
+          progress:
+            overall: 60
+            requirements: 100
+            design: 100
+            tasks: 0
+          status:
+            type: not_edited
+            reason: Tasks document not edited
+          displayText: |
+            📝 tasks.md has not been written yet
+            
+            📁 File directory: ${path}
+            📝 Created: tasks.md
+            
+            📊 Overall progress: ${progress}%
+            🔄 Current status: Writing tasks document (current) → Next step: use check to verify format
+            
+            Model please continue with the following actions:
+            1. Read the task writing guide below
+            2. First read ${path}/tasks.md, then start writing the document
+            3. After completing the document, use specs-workflow tool with action.type="check" to check the document format
+            4. When check passes, the model must ask the user "Does the task plan look good?", and continue after getting explicit approval
+            5. When the user approves, the model must use the specs-workflow tool with action.type="confirm" to complete the workflow
+          resources:
+            - ref: tasks-guide
+            
+        - stage: tasks
+          progress:
+            overall: 90
+            requirements: 100
+            design: 100
+            tasks: 100
+          status:
+            type: ready_to_confirm
+            readyToConfirm: true
+          displayText: |
+            ✅ Tasks document check passed!
+            
+            📊 Overall progress: ${progress}%
+            🔄 Current status: Checking tasks document (current) → Next step: get user approval
+            
+            The tasks document includes:
+            - ✓ Implementation steps
+            - ✓ Task breakdown
+            - ✓ Dependencies
+            - ✓ Acceptance criteria
+            
+            Model please continue with the following actions:
+            1. Ask the user "Does the task plan look good?"
+            2. Wait for explicit user approval (e.g., "yes", "approved", "looks good", etc.)
+            3. After approval, use the specs-workflow tool with action.type="confirm"
+            4. Complete the entire workflow
+            
+        - stage: completed
+          progress:
+            overall: 100
+            requirements: 100
+            design: 100
+            tasks: 100
+          status:
+            type: completed
+          displayText: |
+            ✅ All phases completed!
+            
+            📊 Overall progress: ${progress}%
+            🔄 Current status: Workflow completed ✨
+            
+            You have successfully completed the entire specification writing process:
+            - ✓ Requirements document confirmed
+            - ✓ Design document confirmed
+            - ✓ Tasks document confirmed
+            
+            All documents have been written and confirmed.
+
+    # Skip response
+    SkipResponse:
+      type: object
+      required: [stage, skipped, displayText, progress]
+      properties:
+        stage:
+          type: string
+        skipped:
+          type: boolean
+        progress:
+          $ref: '#/components/schemas/Progress'
+        displayText:
+          type: string
+        resources:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceRef'
+      examples:
+        - stage: requirements
+          skipped: true
+          progress:
+            overall: 30
+            requirements: 100
+            design: 0
+            tasks: 0
+          displayText: |
+            ⏭️ Skipped requirements phase
+            
+            📊 Overall progress: ${progress}%
+            
+            Note: Skipping requirements phase may cause design to deviate from expectations.
+            It's recommended to supplement requirements documents later.
+            
+            Now entering design phase, please edit design.md document.
+          resources:
+            - ref: design-guide
+            
+        - stage: design
+          skipped: true
+          progress:
+            overall: 60
+            requirements: 100
+            design: 100
+            tasks: 0
+          displayText: |
+            ⏭️ Skipped design phase
+            
+            📊 Overall progress: ${progress}%
+            
+            Model please inform the user of the following risks:
+            ⚠️ Warning: Skipping design phase may cause the following problems:
+            - Lack of architectural design may cause implementation direction to deviate
+            - May not fully utilize existing features and components
+            - Code structure may lack overall planning
+            
+            It's recommended to gradually supplement design thinking during implementation.
+            Now entering tasks phase, please edit tasks.md document.
+          resources:
+            - ref: tasks-guide
+            
+        - stage: tasks
+          skipped: true
+          progress:
+            overall: 60
+            requirements: 100
+            design: 100
+            tasks: 0
+          displayText: |
+            ⏭️ Skipped tasks phase
+            
+            📊 Overall progress: ${progress}%
+            
+            ⚠️ Important Note: Tasks document is essential for development
+            - The tasks document defines the specific implementation steps
+            - Without it, developers lack clear guidance on what to build
+            - If you're not ready to develop now, you can skip temporarily
+            
+            To write the tasks document later:
+            1. Use action.type="check" to review current status
+            2. Edit the tasks.md document with implementation details
+            3. Confirm when ready to start development
+            
+            The workflow is now complete. You can return to write tasks when ready to begin development.
+
+    # Confirm response  
+    ConfirmResponse:
+      type: object
+      required: [stage, confirmed, nextStage, displayText, progress]
+      properties:
+        stage:
+          type: string
+        confirmed:
+          type: boolean
+        nextStage:
+          type: string
+          nullable: true
+        progress:
+          $ref: '#/components/schemas/Progress'
+        displayText:
+          type: string
+        resources:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceRef'
+      examples:
+        - stage: requirements
+          confirmed: true
+          nextStage: design
+          progress:
+            overall: 30
+            requirements: 100
+            design: 0
+            tasks: 0
+          displayText: |
+            ✅ Requirements confirmed, entering design phase!
+            
+            📁 File directory: ${path}
+            📝 Created: design.md
+            
+            📊 Overall progress: ${progress}%
+            🔄 Current status: Writing design document (current) → Next step: use check to verify format
+            
+            Model please continue with the following actions:
+            1. Read the design-guide below
+            2. First read ${path}/design.md, then start writing the document
+            3. After completing the document, use specs-workflow tool with action.type="check" to check the document format
+            4. When check passes, the model must ask the user "Does the design look good?", and must not proceed to task writing until getting explicit approval (e.g., "yes", "approved", "looks good", etc.)
+            5. When the user approves, the model must use the specs-workflow tool with action.type="confirm" to enter the tasks phase
+            
+            Special case - Skip design phase:
+            - Only consider skipping when user explicitly requests (e.g., "skip design document", "go directly to tasks")
+            - Before executing skip operation, the model must:
+              1. Explain to user this is an unconventional operation, design document helps better plan implementation
+              2. Clearly state the risks:
+                 - May not fully utilize existing features and components
+                 - Implementation direction may deviate from best practices
+                 - Code structure may lack overall planning
+              3. Ask the user: "Understanding these risks, are you sure you want to skip the design phase?"
+              4. Only use action.type="skip" after user explicitly confirms
+          resources:
+            - ref: design-guide
+        
+        - stage: design
+          confirmed: true
+          nextStage: tasks
+          progress:
+            overall: 60
+            requirements: 100
+            design: 100
+            tasks: 0
+          displayText: |
+            ✅ Design confirmed, entering tasks phase!
+            
+            📁 File directory: ${path}
+            📝 Created: tasks.md
+            
+            📊 Overall progress: ${progress}%
+            🔄 Current status: Writing tasks document (current) → Next step: use check to verify format
+            
+            Model please continue with the following actions:
+            1. Read the task writing guide below
+            2. First read ${path}/tasks.md, then start writing the document
+            3. After completing the document, use specs-workflow tool with action.type="check" to check the document format
+            4. When check passes, the model must ask the user "Does the task plan look good?", and continue after getting explicit approval
+            5. When the user approves, the model must use the specs-workflow tool with action.type="confirm" to complete the workflow
+          resources:
+            - ref: tasks-guide
+            
+        - stage: tasks
+          confirmed: true
+          nextStage: null
+          progress:
+            overall: 100
+            requirements: 100
+            design: 100
+            tasks: 100
+          displayText: |
+            ✅ Tasks confirmed, workflow completed!
+            
+            📊 Overall progress: ${progress}%
+            🔄 Current status: All documents completed ✨
+            
+            Congratulations! You have completed the entire specification writing process:
+            - ✓ Requirements document confirmed
+            - ✓ Design document confirmed
+            - ✓ Tasks document confirmed
+
+    # Complete task response
+    CompleteTaskResponse:
+      type: object
+      required: [taskCompleted, displayText]
+      properties:
+        taskCompleted:
+          type: string
+          description: Completed task number
+        hasNextTask:
+          type: boolean
+          description: Whether there is a next task
+        nextTask:
+          type: object
+          nullable: true
+          properties:
+            number:
+              type: string
+            description:
+              type: string
+        displayText:
+          type: string
+      examples:
+        - taskCompleted: "1"
+          hasNextTask: true
+          nextTask:
+            number: "2"
+            description: "Implement user authentication feature"
+          displayText: |
+            ✅ Task 1 marked as completed!
+            
+            📋 Next task:
+            - [ ] 2. Validate and generate OpenAPI related code and documentation
+              - Run `npm run openapi:validate` to verify the syntax correctness of the extended specification
+              - Run `npm run generate` to generate updated TypeScript type definitions and documentation
+              - Read the generated documentation to understand the detailed usage guide for new types
+              - Verify that `shared/types/api.generated.ts` contains the new architecture monitoring types
+              - Confirm that the return type of `useGetCoreMetricsQuery` hook has been updated
+              - Check the generated documentation for usage examples of ArchitectureMetrics
+              - _Requirements: 1.1, 2.1, 3.1_
+            
+            Related requirements:
+            📌 Requirement 1.1:
+            1.1. As a system administrator, I want to view architecture health status overview in the Dashboard to quickly understand the running status of various system modules
+               - Display health status of all functional modules (healthy/warning/error)
+               - Show overall architecture score (0-100)
+               - Highlight modules with issues
+            
+            📌 Requirement 2.1:
+            2.1. As a developer, I want to view code generation statistics to understand the usage of AI-generated code
+               - Display the number of generated files for each module
+               - Show statistics of generated code lines
+               - Identify recently generated or modified files
+            
+            📌 Requirement 3.1:
+            3.1. As an architect, I want to monitor architecture evolution trends to make optimization decisions
+               - Display historical trend chart of architecture scores
+               - Show change history of health status for each module
+               - Provide improvement suggestions for problematic modules
+            
+            Model please ask the user: "Ready to start task 2?"
+            
+        - taskCompleted: "3.2"
+          hasNextTask: false
+          nextTask: null
+          displayText: |
+            ✅ Task 3.2 marked as completed!
+            
+            🎉 Congratulations! All tasks completed!
+            
+            You have successfully completed all implementation tasks. Project implementation phase completed.
+
+    # Common type definitions
+    Stage:
+      type: string
+      enum: [requirements, design, tasks, completed]
+      description: Current stage
+    
+    Progress:
+      type: object
+      required: [overall, requirements, design, tasks]
+      properties:
+        overall:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Overall progress percentage
+        requirements:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Requirements phase progress
+        design:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Design phase progress
+        tasks:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Tasks phase progress
+      x-progress-rules:
+        - description: Requirements phase accounts for 30%
+          formula: requirements * 0.3
+        - description: Design phase accounts for 30%
+          formula: design * 0.3
+        - description: Tasks phase accounts for 40%
+          formula: tasks * 0.4
+    
+    Status:
+      type: object
+      required: [type]
+      properties:
+        type:
+          type: string
+          enum: [not_started, not_edited, in_progress, ready_to_confirm, confirmed, completed]
+        reason:
+          type: string
+        readyToConfirm:
+          type: boolean
+    
+    Resource:
+      type: object
+      required: [id, content]
+      properties:
+        id:
+          type: string
+          description: Resource identifier
+        content:
+          type: string
+          description: Resource content (Markdown format)
+    
+    ResourceRef:
+      type: object
+      required: [uri, mimeType]
+      properties:
+        uri:
+          type: string
+          description: Resource URI
+        title:
+          type: string
+          description: Optional resource title
+        mimeType:
+          type: string
+          description: Resource MIME type
+        text:
+          type: string
+          description: Optional resource text content
+
+# Error response definitions
+x-error-responses:
+  invalidPath:
+    displayText: |
+      ❌ Error: Invalid specification directory
+      
+      Path ${path} does not exist or is not a valid specification directory.
+      Please ensure the path is correct and has been initialized.
+  
+  alreadyInitialized:
+    displayText: |
+      ❌ Project already exists
+      
+      📁 Path: ${path}
+      📄 Existing files: ${existingFiles}
+      
+      Please choose one of the following actions:
+      1. Delete existing files and reinitialize: rm -rf ${path}/*
+      2. Initialize in a new directory: use a different path parameter
+      3. Continue editing existing project: use action.type="check" to check project status and read existing documents to see if adjustments are needed
+  
+  missingParameters:
+    displayText: |
+      ❌ Error: Missing required parameters
+      
+      ${action} operation requires the following parameters:
+      ${missingParams}
+      
+      Please provide complete parameters and try again.
+  
+  documentNotEdited:
+    displayText: |
+      ❌ Error: Document not ready for confirmation
+      
+      📄 ${documentName} still contains template markers and has not been edited.
+      
+      The document appears to be in its initial state with placeholder content.
+      Before confirming, you must edit the document and then use action.type="check" to verify the document is ready.
+      
+      If you want to skip writing this document:
+      - Use action.type="skip" to bypass this stage
+      - Note: Skipping important documents may impact project quality
+
+
+# Shared resource definitions
+x-shared-resources:
+  # Template editing instructions
+  template-edit-instruction:
+    uri: template-edit-instruction
+    title: Template Editing Instructions
+    mimeType: text/plain
+    text: |
+      ⚠️ Important: Please delete all content with <template-*> tags, then start writing formal content.
+      These tags are used to detect whether the document has been edited. Keeping these tags will cause the document to be judged as "not edited" status.
+  
+  # Requirements document example (reuses existing requirements-guide)
+  requirements-template-example:
+    uri: requirements-template-example
+    title: Requirements Document Example
+    mimeType: text/plain
+    text: |
+      Example requirements:
+      ### Core Features
+      - User authentication system
+        - As a user, I want to register an account to use system features
+        - As a user, I want to log in securely to access personal data
+        
+      ### Acceptance Criteria
+      - [ ] Users can register using email
+      - [ ] Password strength meets security requirements
+      - [ ] Account locks for 15 minutes after 3 failed login attempts
+  
+  # Design document example (reuses existing design-guide)
+  design-template-example:
+    uri: design-template-example
+    title: Design Document Example
+    mimeType: text/plain
+    text: |
+      Example design:
+      ### Technical Architecture
+      - Frontend: React + TypeScript
+      - Backend: Node.js + Express
+      - Database: PostgreSQL
+      - Cache: Redis
+      
+      ### Authentication Flow
+      ```mermaid
+      sequenceDiagram
+          User->>Frontend: Enter credentials
+          Frontend->>Backend: POST /auth/login
+          Backend->>Database: Verify user
+          Database->>Backend: Return user information
+          Backend->>Frontend: Return JWT Token
+      ```
+  
+  # Tasks document example (reuses existing tasks-guide)
+  tasks-template-example:
+    uri: tasks-template-example
+    title: Task List Example
+    mimeType: text/plain
+    text: |
+      Example tasks:
+      ### Phase 1: Foundation Setup
+      - [ ] Initialize project structure (2h)
+      - [ ] Configure development environment (1h)
+      - [ ] Set up database connection (2h)
+      
+      ### Phase 2: Core Features
+      - [ ] Implement user registration API (4h)
+        - Dependency: Database connection
+      - [ ] Implement login authentication (4h)
+        - Dependency: User registration API
+  
+  requirements-guide:
+    uri: requirements-guide
+    title: Requirements Document Writing Guide
+    mimeType: text/markdown
+    text: |
+      # Requirements Gathering Generation
+      
+      Workflow Stage: Requirements Gathering
+      
+      First, generate an initial set of requirements in EARS format based on the feature idea, then iterate with the user to refine them until they are complete and accurate.
+      
+      Don't focus on code exploration in this phase. Instead, just focus on writing requirements which will later be turned into a design.
+      
+      **Constraints:**
+      
+      - The model MUST write the requirements document in the user's preferred regional language
+      - The model MUST edit the existing requirements.md file by removing the SPEC-MARKER comment block
+      - The model MUST fill in the requirements document based on the user's rough idea WITHOUT asking sequential questions first
+      - The model MUST format the requirements.md document with:
+        - A clear introduction section that summarizes the feature
+        - A hierarchical numbered list of requirements where each contains:
+          - A user story in the format "As a [role], I want [feature], so that [benefit]"
+          - A numbered list of acceptance criteria in EARS format (Easy Approach to Requirements Syntax)
+      - The model SHOULD consider edge cases, user experience, technical constraints, and success criteria in the initial requirements
+      - After updating the requirement document, the model MUST ask the user "Do the requirements look good? If so, we can move on to the design." 
+      - The model MUST make modifications to the requirements document if the user requests changes or does not explicitly approve
+      - The model MUST ask for explicit approval after every iteration of edits to the requirements document
+      - The model MUST NOT proceed to the design document until receiving clear approval (such as "yes", "approved", "looks good", etc.)
+      - The model MUST continue the feedback-revision cycle until explicit approval is received
+      - The model SHOULD suggest specific areas where the requirements might need clarification or expansion
+      - The model MAY ask targeted questions about specific aspects of the requirements that need clarification
+      - The model MAY suggest options when the user is unsure about a particular aspect
+      - The model MUST proceed to the design phase after the user accepts the requirements
+
+  design-guide:
+    uri: design-guide
+    title: Design Document Writing Guide
+    mimeType: text/markdown
+    text: |
+      # Design Document Creation Generation
+      
+      Workflow Stage: Design Document Creation
+      
+      After the user approves the Requirements, you should develop a comprehensive design document based on the feature requirements, conducting necessary research during the design process.
+      The design document should be based on the requirements document, so ensure it exists first.
+      
+      **Constraints:**
+      
+      - The model MUST write the design document in the user's preferred regional language
+      - The model MUST edit the existing design.md file by removing the SPEC-MARKER comment block
+      - The model MUST identify areas where research is needed based on the feature requirements
+      - The model MUST conduct research and build up context in the conversation thread
+      - The model SHOULD NOT create separate research files, but instead use the research as context for the design and implementation plan
+      - The model MUST summarize key findings that will inform the feature design
+      - The model SHOULD cite sources and include relevant links in the conversation
+      - The model MUST fill in the detailed design document in the existing design.md file
+      - The model MUST incorporate research findings directly into the design process
+      - The model MUST include the following sections in the design document:
+        - Overview
+        - Architecture
+        - Components and Interfaces
+        - Data Models
+        - Error Handling
+        - Testing Strategy
+      - The model SHOULD include diagrams or visual representations when appropriate (use Mermaid for diagrams if applicable)
+      - The model MUST ensure the design addresses all feature requirements identified during the clarification process
+      - The model SHOULD highlight design decisions and their rationales
+      - The model MAY ask the user for input on specific technical decisions during the design process
+      - After updating the design document, the model MUST ask the user "Does the design look good? If so, we can move on to the implementation plan."
+      - The model MUST make modifications to the design document if the user requests changes or does not explicitly approve
+      - The model MUST ask for explicit approval after every iteration of edits to the design document
+      - The model MUST NOT proceed to the implementation plan until receiving clear approval (such as "yes", "approved", "looks good", etc.)
+      - The model MUST continue the feedback-revision cycle until explicit approval is received
+      - The model MUST incorporate all user feedback into the design document before proceeding
+      - The model MUST offer to return to feature requirements clarification if gaps are identified during design
+
+  tasks-guide:
+    uri: tasks-guide
+    title: Task List Writing Guide
+    mimeType: text/markdown
+    text: |
+      # Implementation Planning Generation
+      
+      Workflow Stage: Implementation Planning
+      
+      After the user approves the Design, create an actionable implementation plan with a checklist of coding tasks based on the requirements and design.
+      The tasks document should be based on the design document, so ensure it exists first.
+      
+      **Constraints:**
+      
+      - The model MUST write the tasks document in the user's preferred regional language
+      - The model MUST edit the existing tasks.md file by removing the SPEC-MARKER comment block
+      - The model MUST return to the design step if the user indicates any changes are needed to the design
+      - The model MUST return to the requirement step if the user indicates that we need additional requirements
+      - The model MUST fill in the implementation plan in the existing tasks.md file
+      - The model MUST use the following specific instructions when creating the implementation plan: Convert the feature design into a series of prompts for a code-generation LLM that will implement each step in a test-driven manner. Prioritize best practices, incremental progress, and early testing, ensuring no big jumps in complexity at any stage. Make sure that each prompt builds on the previous prompts, and ends with wiring things together. There should be no hanging or orphaned code that isn't integrated into a previous step. Focus ONLY on tasks that involve writing, modifying, or testing code.
+      - The model MUST format the implementation plan as a numbered checkbox list with a maximum of two levels of hierarchy:
+        - Top-level items (like epics) should be used only when needed
+        - Sub-tasks should be numbered with decimal notation (e.g., 1.1, 1.2, 2.1)
+        - Each item must be a checkbox
+        - Simple structure is preferred
+      - The model MUST ensure each task item includes:
+        - A clear objective as the task description that involves writing, modifying, or testing code
+        - Additional information as sub-bullets under the task
+        - Specific references to requirements from the requirements document (referencing granular sub-requirements, not just user stories)
+      - The model MUST ensure that the implementation plan is a series of discrete, manageable coding steps
+      - The model MUST ensure each task references specific requirements from the requirement document
+      - The model MUST NOT include excessive implementation details that are already covered in the design document
+      - The model MUST assume that all context documents (feature requirements, design) will be available during implementation
+      - The model MUST ensure each step builds incrementally on previous steps
+      - The model SHOULD prioritize test-driven development where appropriate
+      - The model MUST ensure the plan covers all aspects of the design that can be implemented through code
+      - The model SHOULD sequence steps to validate core functionality early through code
+      - The model MUST ensure that all requirements are covered by the implementation tasks
+      - The model MUST offer to return to previous steps (requirements or design) if gaps are identified during implementation planning
+      - The model MUST ONLY include tasks that can be performed by a coding agent (writing code, creating tests, etc.)
+      - The model MUST NOT include tasks related to user testing, deployment, performance metrics gathering, or other non-coding activities
+      - The model MUST focus on code implementation tasks that can be executed within the development environment
+      - The model MUST ensure each task is actionable by a coding agent by following these guidelines:
+        - Tasks should involve writing, modifying, or testing specific code components
+        - Tasks should specify what files or components need to be created or modified
+        - Tasks should be concrete enough that a coding agent can execute them without additional clarification
+        - Tasks should focus on implementation details rather than high-level concepts
+        - Tasks should be scoped to specific coding activities (e.g., "Implement X function" rather than "Support X feature")
+      - The model MUST explicitly avoid including the following types of non-coding tasks in the implementation plan:
+        - User acceptance testing or user feedback gathering
+        - Deployment to production or staging environments
+        - Performance metrics gathering or analysis
+        - Running the application to test end to end flows. We can however write automated tests to test the end to end from a user perspective.
+        - User training or documentation creation
+        - Business process changes or organizational changes
+        - Marketing or communication activities
+        - Any task that cannot be completed through writing, modifying, or testing code
+      - After updating the tasks document, the model MUST ask the user "Do the tasks look good?" 
+      - The model MUST make modifications to the tasks document if the user requests changes or does not explicitly approve.
+      - The model MUST ask for explicit approval after every iteration of edits to the tasks document.
+      - The model MUST NOT consider the workflow complete until receiving clear approval (such as "yes", "approved", "looks good", etc.).
+      - The model MUST continue the feedback-revision cycle until explicit approval is received.
+      - The model MUST stop once the task document has been approved.
+      
+      **This workflow is ONLY for creating design and planning artifacts. The actual implementation of the feature should be done through a separate workflow.**
+      
+      - The model MUST NOT attempt to implement the feature as part of this workflow
+      - The model MUST clearly communicate to the user that this workflow is complete once the design and planning artifacts are created
+      - When the model receives the confirmation response for tasks stage, it will include the first uncompleted task
+      - The model MUST present this task to the user and ask: "Ready to start the first task?"
+      - The model MUST begin implementation only after user confirmation
+
+# Global configuration
+x-global-config:
+  icons:
+    exists: "✅"
+    not_exists: "❌"
+    edited: "(edited)"
+    not_edited: "(pending edit)"
+    not_created: "(not created)"
+    confirmed: "(confirmed)"
+    skipped: "(skipped)"
+  
+  status_text:
+    not_created: "Not created"
+    not_edited: "Waiting for edit"
+    has_format_issues: "Has format issues"
+    not_confirmed: "Pending confirmation"
+    completed: "Completed"
+    skipped: "Skipped"
+  
+  stage_names:
+    requirements: "Requirements Document"
+    design: "Design Document"  
+    tasks: "Task List"
+    completed: "Completed"
+  
+  file_names:
+    requirements: "Requirements.md"
+    design: "Design.md"
+    tasks: "Tasks.md"
+
+# Document templates
+x-document-templates:
+  requirements:
+    title: "${featureName} - Requirements Document"
+    sections:
+      - name: "Project Background"
+        content: "${introduction}"
+      - name: "Core Features"
+        placeholder: "## Core Features\n\n<template-requirements>\nDescribe the core functionality of the feature here.\n</template-requirements>"
+      - name: "User Stories"
+        placeholder: "## User Stories\n\n<template-requirements>\n- As a [user type], I want [feature], so that [benefit]\n</template-requirements>"
+      - name: "Acceptance Criteria"
+        placeholder: "## Acceptance Criteria\n\n<template-requirements>\n- [ ] Criterion 1\n- [ ] Criterion 2\n</template-requirements>"
+      - name: "Non-functional Requirements"
+        placeholder: "## Non-functional Requirements\n\n<template-requirements>\n- Performance requirements\n- Security requirements\n- Compatibility requirements\n</template-requirements>"
+  
+  design:
+    title: "${featureName} - Design Document"
+    sections:
+      - name: "Overview"
+        placeholder: "## Overview\n\n<template-design>\nProvide a high-level overview of the design approach.\n</template-design>"
+      - name: "Architecture"
+        placeholder: "## Architecture\n\n<template-design>\nDescribe the overall architecture and key components.\n</template-design>"
+      - name: "Components and Interfaces"
+        placeholder: "## Components and Interfaces\n\n<template-design>\nDetail the main components and their interfaces.\n</template-design>"
+      - name: "Data Models"
+        placeholder: "## Data Models\n\n<template-design>\nDefine the data structures and models.\n</template-design>"
+      - name: "Error Handling"
+        placeholder: "## Error Handling\n\n<template-design>\nExplain error handling strategies.\n</template-design>"
+      - name: "Testing Strategy"
+        placeholder: "## Testing Strategy\n\n<template-design>\nOutline the testing approach.\n</template-design>"
+  
+  tasks:
+    title: "${featureName} - Task List"
+    sections:
+      - name: "Implementation Tasks"
+        placeholder: "## Implementation Tasks\n\n<template-tasks>\n- [ ] Task 1\n  - [ ] 1.1 Subtask\n  - [ ] 1.2 Subtask\n- [ ] Task 2\n</template-tasks>"
+      - name: "Task Dependencies"
+        placeholder: "## Task Dependencies\n\n<template-tasks>\nList any dependencies between tasks.\n</template-tasks>"
+      - name: "Estimated Timeline"
+        placeholder: "## Estimated Timeline\n\n<template-tasks>\nProvide time estimates for major tasks.\n</template-tasks>"
+  
+  skipped:
+    title: "${featureName} - ${stageName}"
+    sections:
+      - name: "Status"
+        content: "[Skipped] - This stage has been skipped"
+      - name: "Reason"
+        content: "User chose to skip this stage and proceed directly to next step."
+      - name: "Note"
+        content: "To supplement this document, please delete [Skipped] marker and fill in corresponding content."

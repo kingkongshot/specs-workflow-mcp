@@ -1,0 +1,34 @@
+# 源码相关
+src/
+*.ts
+!dist/**/*.d.ts
+tsconfig.json
+
+# 开发工具
+.claude/
+scripts/
+debug.sh
+.gitignore
+.npmignore
+
+# 测试相关
+tests/
+test-specs/
+*.test.js
+*.spec.js
+
+# 文档（保留 prompts 因为运行时需要）
+docs/
+README.md
+
+# 本地配置
+CLAUDE.local.md
+memory/
+specs/
+
+# WebUI（开发时使用）
+webui/
+
+# 构建工具
+node_modules/
+package-lock.json

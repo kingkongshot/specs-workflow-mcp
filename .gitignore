@@ -1,0 +1,66 @@
+# Claude configuration
+.claude
+/memory
+
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing related
+# 排除所有测试相关文件
+/src/**/*.test.js
+/src/**/*.spec.js
+/src/**/*.test.ts
+/src/**/*.spec.ts
+coverage/
+test-specs/
+
+# Documentation
+docs/
+guidance/zh/
+
+# Build artifacts
+dist/
+build/
+*.log
+
+# Environment configuration
+.env
+.env.local
+.env.*.local
+
+# Editor configuration
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Local configuration
+*.local.*
+mcp-config.json
+CLAUDE.local.md
+
+# Preview files
+preview/
+
+# Prompt files (migrated to OpenAPI)
+prompts/
+
+# WebUI generated files
+webui/
+/specs
+
+# Debug files
+debug.sh
