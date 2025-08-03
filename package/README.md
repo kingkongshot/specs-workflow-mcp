@@ -4,35 +4,49 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MCP](https://img.shields.io/badge/MCP-Compatible-blue)](https://modelcontextprotocol.com)
 
-[English](README.md) | [简体中文](README-zh.md)
+[English](https://github.com/kingkongshot/specs-workflow-mcp/blob/main/README.md) | [简体中文](https://github.com/kingkongshot/specs-workflow-mcp/blob/main/README-zh.md)
 
-An intelligent MCP server for managing software project specifications through a structured workflow of requirements, design, and implementation documents.
+An intelligent MCP server that guides AI to create software project specifications through a structured workflow: Requirements → Design → Tasks.
 
-## What is Spec Workflow MCP?
+## Quick Start - How to Use
 
-Spec Workflow MCP helps development teams maintain high-quality project documentation by providing an AI-powered workflow that guides you through creating comprehensive specifications.
+After installation, simply tell your AI assistant:
 
-### ❌ Without Spec Workflow MCP
+### Start a New Project
+```
+"Help me use specs to create a user authentication system"
+```
+or
+```
+"Use specs to organize our chat history into project documentation"
+```
 
-- Inconsistent documentation across projects
-- Missing critical requirements details  
-- Unstructured design decisions
-- Unclear implementation tasks
-- Manual tracking of document completion
-- **AI jumps between tasks randomly without structure**
-- **No connection between requirements and actual code implementation**
+The AI will:
+1. 📝 Create a requirements document based on user stories
+2. 🎨 Generate a design document with technical details
+3. ✅ List clear implementation tasks
+4. 🚀 Guide development following the task list
 
-### ✅ With Spec Workflow MCP
+### Continue Existing Project
+```
+"Use specs to check ./my-project"
+```
 
-- Standardized document templates for requirements, design, and tasks
-- AI-guided document generation based on best practices
-- Automatic progress tracking and workflow management
-- Smart validation of document completeness
-- Seamless integration with Claude and other MCP-compatible tools
-- **AI follows task order systematically, completing one before moving to the next**
-- **Requirements → Design → Tasks workflow ensures code aligns with business needs**
+The AI will pick up where you left off and continue the workflow.
+
+### How It Works
+
+1. **You describe what you want** - Just explain your project idea
+2. **AI creates structured docs** - Requirements → Design → Tasks
+3. **You review and approve** - Each stage needs your confirmation
+4. **Development follows tasks** - Clear, trackable implementation
+
+Each step requires your approval before proceeding, ensuring you maintain control over the project direction.
 
 ## Installation
+
+<details>
+<summary>📦 Installation Instructions</summary>
 
 ### Requirements
 
@@ -171,49 +185,86 @@ Then add to Claude Desktop configuration:
 }
 ```
 
-## Usage
+</details>
 
-Once installed, the MCP server provides the following commands through Claude:
+## Example Workflow
 
-### Initialize a New Feature
+<details>
+<summary>📋 See Complete Example</summary>
 
+### 1. Start with an idea
 ```
-Initialize spec workflow for "user authentication feature"
-```
-
-This creates a structured requirements document with sections for:
-- Feature overview
-- User stories
-- Functional requirements
-- Non-functional requirements
-- Technical constraints
-
-### Check Progress and Generate Next Document
-
-```
-Check spec workflow progress
+You: "I need to build a user authentication system"
 ```
 
-The server analyzes your current documentation and:
-- Shows completion status for each section
-- Identifies missing or incomplete areas
-- Automatically generates the next document in the workflow
-
-### Complete Tasks
-
+### 2. AI creates requirements
 ```
-Complete task #3 in the implementation plan
+AI: "I'll help you create specs for user authentication. Let me start with the requirements document..."
+
+[Creates requirements.md with user stories, functional requirements, etc.]
+
+AI: "I've created the requirements document. Please review it and let me know if you'd like any changes."
 ```
 
-Mark specific tasks as completed and track overall progress.
-
-### Skip Stages
-
+### 3. Review and confirm
 ```
-Skip the design stage and go to implementation
+You: "Looks good, continue"
 ```
 
-Flexibility to adapt the workflow to your project needs.
+### 4. AI creates design
+```
+AI: "Now I'll create the technical design based on these requirements..."
+
+[Creates design.md with architecture, API design, database schema, etc.]
+```
+
+### 5. AI creates tasks
+```
+AI: "Based on the design, here are the implementation tasks..."
+
+[Creates tasks.md with numbered task list]
+```
+
+### 6. Start development
+```
+AI: "Let's start with Task 1: Set up authentication database schema..."
+
+[Implements each task in order]
+```
+
+</details>
+
+## Key Features
+
+- 📝 **User Story Based**: Start with user stories and transform them into technical requirements
+- 🔄 **Three-Phase Workflow**: Requirements → Design → Tasks with progress tracking
+- ✅ **Task Management**: Clear task lists with completion tracking
+- 🎯 **Sequential Execution**: AI completes tasks in order, maintaining focus and context
+- 🔒 **Approval Gates**: Each phase requires your confirmation before proceeding
+
+## What is Spec Workflow MCP?
+
+Spec Workflow MCP helps development teams maintain high-quality project documentation by providing an AI-powered workflow that guides you through creating comprehensive specifications.
+
+### ❌ Without Spec Workflow MCP
+
+- Inconsistent documentation across projects
+- Missing critical requirements details  
+- Unstructured design decisions
+- Unclear implementation tasks
+- Manual tracking of document completion
+- **AI jumps between tasks randomly without structure**
+- **No connection between requirements and actual code implementation**
+
+### ✅ With Spec Workflow MCP
+
+- Standardized document templates for requirements, design, and tasks
+- AI-guided document generation based on best practices
+- Automatic progress tracking and workflow management
+- Smart validation of document completeness
+- Seamless integration with Claude and other MCP-compatible tools
+- **AI follows task order systematically, completing one before moving to the next**
+- **Requirements → Design → Tasks workflow ensures code aligns with business needs**
 
 ## Workflow Stages
 
@@ -224,43 +275,6 @@ Each stage has:
 - Validation rules
 - AI-powered content generation
 - Progress tracking
-
-## Features
-
-- 📝 **Smart Templates**: Pre-defined document structures following best practices
-- 🤖 **AI-Powered Generation**: Intelligent content suggestions based on your project context
-- ✅ **Progress Tracking**: Visual progress indicators and completion tracking
-- 🔄 **Flexible Workflow**: Skip stages or adapt the process to your needs
-- 📊 **Quality Validation**: Automatic checks for document completeness
-- 🔗 **MCP Integration**: Works seamlessly with Claude and other MCP clients
-- 🎯 **Sequential Task Execution**: AI completes tasks in order, maintaining focus and context
-- 🔄 **Requirements-Driven Development**: From business needs to code implementation in structured steps
-
-## Example Workflow
-
-1. Start with a feature idea:
-   ```
-   "I need to build a user authentication system"
-   ```
-
-2. Initialize the workflow:
-   ```
-   Initialize spec workflow for "user authentication"
-   ```
-
-3. Review and enhance the generated requirements
-
-4. Check progress and generate design document:
-   ```
-   Check workflow progress
-   ```
-
-5. Continue through design and implementation stages
-
-6. Track task completion:
-   ```
-   Complete task #1: Set up authentication database schema
-   ```
 
 ## Development
 
@@ -299,10 +313,14 @@ MIT License - see LICENSE file for details
 
 ## Links
 
-- [GitHub Repository](https://github.com/kingkongshot/specs-mcp)
+- [GitHub Repository](https://github.com/kingkongshot/specs-workflow-mcp)
 - [NPM Package](https://www.npmjs.com/package/spec-workflow-mcp)
 - [MCP Documentation](https://modelcontextprotocol.com)
 
 ---
+
+<a href="https://glama.ai/mcp/servers/@kingkongshot/specs-workflow-mcp">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@kingkongshot/specs-workflow-mcp/badge" alt="Spec Workflow MCP server" />
+</a>
 
 Built with ❤️ using the Model Context Protocol
