@@ -38,12 +38,6 @@ Spec Workflow MCP 通过提供 AI 驱动的工作流，帮助开发团队维护�
 - npm 或 yarn
 - Claude Desktop 或任何 MCP 兼容客户端
 
-### 使用 npx 快速开始
-
-```bash
-npx spec-workflow-mcp@latest
-```
-
 ### 在不同 MCP 客户端中安装
 
 #### Claude Code（推荐）
@@ -86,6 +80,17 @@ claude mcp add spec-workflow-mcp -s user -- npx -y spec-workflow-mcp@latest
   }
 }
 ```
+
+#### Cline
+
+使用 Cline 的 MCP 服务器管理界面添加服务器：
+
+1. 打开安装了 Cline 扩展的 VS Code
+2. 打开 Cline 设置（齿轮图标）
+3. 导航到 MCP Servers 部分
+4. 添加新服务器：
+   - Command: `npx`
+   - Arguments: `-y spec-workflow-mcp@latest`
 
 #### Windsurf (Codeium)
 

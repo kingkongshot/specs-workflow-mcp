@@ -40,12 +40,6 @@ Spec Workflow MCP helps development teams maintain high-quality project document
 - npm or yarn
 - Claude Desktop or any MCP-compatible client
 
-### Quick Start with npx
-
-```bash
-npx spec-workflow-mcp@latest
-```
-
 ### Install in Different MCP Clients
 
 #### Claude Code (Recommended)
@@ -88,6 +82,17 @@ Add to your Cursor configuration (`~/.cursor/config.json`):
   }
 }
 ```
+
+#### Cline
+
+Use Cline's MCP server management UI to add the server:
+
+1. Open VS Code with Cline extension
+2. Open Cline settings (gear icon)
+3. Navigate to MCP Servers section
+4. Add new server with:
+   - Command: `npx`
+   - Arguments: `-y spec-workflow-mcp@latest`
 
 #### Windsurf (Codeium)
 

@@ -28,8 +28,16 @@
     "workflow",
     "spec"
   ],
-  "author": "",
+  "author": "kingkongshot",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kingkongshot/specs-workflow-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kingkongshot/specs-workflow-mcp/issues"
+  },
+  "homepage": "https://github.com/kingkongshot/specs-workflow-mcp#readme",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.16.0",
     "@types/js-yaml": "^4.0.9",

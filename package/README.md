@@ -40,13 +40,9 @@ Spec Workflow MCP helps development teams maintain high-quality project document
 - npm or yarn
 - Claude Desktop or any MCP-compatible client
 
-### Quick Start with npx
+### Install in Different MCP Clients
 
-```bash
-npx spec-workflow-mcp
-```
-
-### Install in Claude Code (Recommended)
+#### Claude Code (Recommended)
 
 Use the Claude CLI to add the MCP server:
 
@@ -54,16 +50,100 @@ Use the Claude CLI to add the MCP server:
 claude mcp add spec-workflow-mcp -s user -- npx -y spec-workflow-mcp@latest
 ```
 
-### Install in Claude Desktop
+#### Claude Desktop
 
-Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+Add to your Claude Desktop configuration:
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%/Claude/claude_desktop_config.json`
+- Linux: `~/.config/Claude/claude_desktop_config.json`
 
 ```json
 {
   "mcpServers": {
     "spec-workflow": {
       "command": "npx",
-      "args": ["-y", "spec-workflow-mcp"]
+      "args": ["-y", "spec-workflow-mcp@latest"]
+    }
+  }
+}
+```
+
+#### Cursor
+
+Add to your Cursor configuration (`~/.cursor/config.json`):
+
+```json
+{
+  "mcpServers": {
+    "spec-workflow": {
+      "command": "npx",
+      "args": ["-y", "spec-workflow-mcp@latest"]
+    }
+  }
+}
+```
+
+#### Cline
+
+Use Cline's MCP server management UI to add the server:
+
+1. Open VS Code with Cline extension
+2. Open Cline settings (gear icon)
+3. Navigate to MCP Servers section
+4. Add new server with:
+   - Command: `npx`
+   - Arguments: `-y spec-workflow-mcp@latest`
+
+#### Windsurf (Codeium)
+
+Add to your Windsurf configuration (`~/.codeium/windsurf/mcp_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "spec-workflow": {
+      "command": "npx",
+      "args": ["-y", "spec-workflow-mcp@latest"],
+      "env": {},
+      "autoApprove": [],
+      "disabled": false,
+      "timeout": 60,
+      "transportType": "stdio"
+    }
+  }
+}
+```
+
+#### VS Code (with MCP extension)
+
+Add to your VS Code settings (`settings.json`):
+
+```json
+{
+  "mcp.servers": {
+    "spec-workflow": {
+      "command": "npx",
+      "args": ["-y", "spec-workflow-mcp@latest"]
+    }
+  }
+}
+```
+
+#### Zed
+
+Add to your Zed configuration (`~/.config/zed/settings.json`):
+
+```json
+{
+  "assistant": {
+    "version": "2",
+    "mcp": {
+      "servers": {
+        "spec-workflow": {
+          "command": "npx",
+          "args": ["-y", "spec-workflow-mcp@latest"]
+        }
+      }
     }
   }
 }

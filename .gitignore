@@ -64,3 +64,8 @@ webui/
 
 # Debug files
 debug.sh
+
+# Security - Never commit these files
+push-to-github.sh
+*-token.sh
+*.token
