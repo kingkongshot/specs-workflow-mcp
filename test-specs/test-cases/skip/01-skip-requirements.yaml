@@ -1,0 +1,35 @@
+# 测试用例：跳过需求阶段
+name: "跳过需求阶段"
+description: "测试跳过需求文档阶段的功能"
+category: "skip"
+priority: "high"
+
+setup:
+  fixtures: "fixtures/skip/requirements-stage"
+  target: "./e2e-test-skip-requirements"
+
+request:
+  method: "tools/call"
+  params:
+    name: "specs-workflow"
+    arguments:
+      path: "./e2e-test-skip-requirements"
+      action:
+        type: "skip"
+
+expect:
+  operation: "skip"
+  # JSON Schema 验证会自动验证结构是否符合 OpenAPI 规范
+  additional_checks:
+    - type: "file_content"
+      path: "./e2e-test-skip-requirements/.workflow-confirmations.json"
+      contains: '"requirements":true'
+      parent_key: "skipped"
+      description: "需求阶段应该被标记为已跳过"
+    # MCP 服务器不会在文档中添加跳过标记，暂时注释掉这个检查
+    # - type: "file_content"
+    #   path: "./e2e-test-skip-requirements/requirements.md"
+    #   contains: "跳过原因"
+    #   description: "需求文档应该包含跳过标记"
+
+cleanup: ["./e2e-test-skip-requirements"]

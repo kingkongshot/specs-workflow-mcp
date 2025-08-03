@@ -1,0 +1,33 @@
+# 测试用例：检查设计阶段
+name: "检查设计阶段文档"
+description: "测试检查设计阶段的项目状态"
+category: "check"
+priority: "high"
+
+setup:
+  fixtures: "fixtures/design/in-progress"
+  target: "./e2e-test-check-design"
+
+request:
+  method: "tools/call"
+  params:
+    name: "specs-workflow"
+    arguments:
+      path: "./e2e-test-check-design"
+      action:
+        type: "check"
+
+expect:
+  operation: "check"
+  # JSON Schema 验证会自动验证结构是否符合 OpenAPI 规范
+  additional_checks:
+    - type: "value_equals"
+      path: "structuredContent.stage"
+      value: "design"
+      description: "应该处于设计阶段"
+    - type: "value_equals"
+      path: "structuredContent.progress.requirements"
+      value: 100
+      description: "需求阶段应该已完成"
+
+cleanup: ["./e2e-test-check-design"]

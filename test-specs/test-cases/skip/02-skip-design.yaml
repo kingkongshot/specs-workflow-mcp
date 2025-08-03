@@ -1,0 +1,38 @@
+# 测试用例：跳过设计阶段
+name: "跳过设计阶段"
+description: "测试跳过设计文档阶段的功能"
+category: "skip"
+priority: "high"
+
+setup:
+  fixtures: "fixtures/skip/design-stage"
+  target: "./e2e-test-skip-design"
+
+request:
+  method: "tools/call"
+  params:
+    name: "specs-workflow"
+    arguments:
+      path: "./e2e-test-skip-design"
+      action:
+        type: "skip"
+
+expect:
+  operation: "skip"
+  # JSON Schema 验证会自动验证结构是否符合 OpenAPI 规范
+  additional_checks:
+    - type: "file_content"
+      path: "./e2e-test-skip-design/.workflow-confirmations.json"
+      contains: '"design":true'
+      parent_key: "skipped"
+      description: "设计阶段应该被标记为已跳过"
+    # MCP 服务器不会在文档中添加跳过标记
+    # - type: "file_content"
+    #   path: "./e2e-test-skip-design/design.md"
+    #   contains: "跳过原因"
+    #   description: "设计文档应该包含跳过标记"
+    - type: "file_exists"
+      path: "./e2e-test-skip-design/tasks.md"
+      description: "应该生成任务文档"
+
+cleanup: ["./e2e-test-skip-design"]

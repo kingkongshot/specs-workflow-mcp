@@ -1,0 +1,34 @@
+# 测试用例：检查已完成的项目
+name: "检查已完成的项目"
+description: "测试检查所有阶段都已完成的项目状态"
+category: "check"
+priority: "medium"
+
+setup:
+  # 需要创建一个所有任务都已完成的装置
+  fixtures: "fixtures/complete-task/all-done"
+  target: "./e2e-test-check-completed"
+
+request:
+  method: "tools/call"
+  params:
+    name: "specs-workflow"
+    arguments:
+      path: "./e2e-test-check-completed"
+      action:
+        type: "check"
+
+expect:
+  operation: "check"
+  # JSON Schema 验证会自动验证结构是否符合 OpenAPI 规范
+  additional_checks:
+    - type: "value_equals"
+      path: "structuredContent.stage"
+      value: "completed"
+      description: "应该处于已完成状态"
+    - type: "value_equals"
+      path: "structuredContent.progress.overall"
+      value: 100
+      description: "总体进度应该是 100%"
+
+cleanup: ["./e2e-test-check-completed"]

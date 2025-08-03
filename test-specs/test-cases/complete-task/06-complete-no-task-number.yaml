@@ -1,0 +1,34 @@
+# 测试用例：未提供任务号
+name: "未提供任务号"
+description: "测试调用 complete_task 但未提供任务号参数"
+category: "complete-task"
+priority: "high"
+
+setup:
+  fixtures: "fixtures/complete-task/tasks-stage"
+  target: "./e2e-test-complete-no-number"
+
+request:
+  method: "tools/call"
+  params:
+    name: "specs-workflow"
+    arguments:
+      path: "./e2e-test-complete-no-number"
+      action:
+        type: "complete_task"
+        # 故意不提供 taskNumber
+
+expect:
+  operation: "complete_task"
+  # JSON Schema 验证会自动验证结构是否符合 OpenAPI 规范
+  additional_checks:
+    - type: "value_equals"
+      path: "isError"
+      value: true
+      description: "应该是错误响应"
+    - type: "value_contains"
+      path: "content[0].text"
+      contains: "taskNumber"
+      description: "错误信息应该提到缺少 taskNumber 参数"
+
+cleanup: ["./e2e-test-complete-no-number"]

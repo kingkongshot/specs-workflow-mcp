@@ -1,0 +1,37 @@
+# 测试用例：确认已确认的阶段
+name: "确认已确认的阶段"
+description: "测试尝试确认一个已经确认过的阶段"
+category: "confirm"
+priority: "medium"
+
+setup:
+  fixtures: "fixtures/confirm/requirements-already-confirmed"
+  target: "./e2e-test-confirm-duplicate"
+
+request:
+  method: "tools/call"
+  params:
+    name: "specs-workflow"
+    arguments:
+      path: "./e2e-test-confirm-duplicate"
+      action:
+        type: "confirm"
+
+expect:
+  operation: "confirm"
+  # 根据实际行为，重复确认是允许的，会返回相同的成功响应
+  additional_checks:
+    - type: "value_equals"
+      path: "structuredContent.stage"
+      value: "design"
+      description: "当前阶段应该是设计（因为需求已确认）"
+    - type: "value_equals"
+      path: "structuredContent.confirmed"
+      value: true
+      description: "应该显示已确认"
+    - type: "value_equals"
+      path: "structuredContent.nextStage"
+      value: "tasks"
+      description: "下一阶段应该是任务"
+
+cleanup: ["./e2e-test-confirm-duplicate"]

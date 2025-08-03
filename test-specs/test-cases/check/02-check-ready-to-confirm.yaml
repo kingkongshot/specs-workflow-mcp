@@ -1,0 +1,22 @@
+# 测试用例：检查已完成的需求文档
+name: "检查已完成的需求文档"
+description: "测试检查需求文档已完成，准备确认的状态"
+
+setup:
+  fixtures: "fixtures/requirements/ready"
+  target: "./e2e-test-check-ready"
+
+request:
+  method: "tools/call"
+  params:
+    name: "specs-workflow"
+    arguments:
+      path: "./e2e-test-check-ready"
+      action:
+        type: "check"
+
+expect:
+  operation: "check"
+  # JSON Schema 验证会自动验证结构是否符合 OpenAPI 规范
+
+cleanup: ["./e2e-test-check-ready"]

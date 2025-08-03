@@ -1,0 +1,27 @@
+# 测试用例：初始化新项目
+name: "初始化新项目"
+description: "测试 specs-mcp 初始化一个全新项目的功能"
+
+setup:
+  cleanup: ["./e2e-test-init"]  # 测试前清理
+
+request:
+  method: "tools/call"
+  params:
+    name: "specs-workflow"
+    arguments:
+      path: "./e2e-test-init"
+      action:
+        type: "init"
+        featureName: "E2E测试功能"
+        introduction: "端到端测试初始化功能"
+
+expect:
+  operation: "init"
+  additional_checks:
+    - type: "file_exists"
+      path: "./e2e-test-init/requirements.md"
+    - type: "file_exists"
+      path: "./e2e-test-init/.workflow-confirmations.json"
+
+cleanup: ["./e2e-test-init"]  # 测试后清理

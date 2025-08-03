@@ -15,7 +15,9 @@ yarn-error.log*
 /src/**/*.test.ts
 /src/**/*.spec.ts
 coverage/
-test-specs/
+# test-specs/ - 在 dev 分支中保留测试套件
+test-specs/reports/
+test-specs/node_modules/
 
 # Documentation
 docs/
@@ -30,6 +32,7 @@ build/
 .env
 .env.local
 .env.*.local
+test-specs/.env.test
 
 # Editor configuration
 .vscode/

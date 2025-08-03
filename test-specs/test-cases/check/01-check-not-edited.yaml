@@ -1,0 +1,22 @@
+# 测试用例：检查未编辑的需求文档
+name: "检查未编辑的需求文档"
+description: "测试检查刚初始化但未编辑的需求文档状态"
+
+setup:
+  fixtures: "fixtures/requirements/not-edited"  # 使用未编辑的需求文档
+  target: "./e2e-test-check"
+
+request:
+  method: "tools/call"
+  params:
+    name: "specs-workflow"
+    arguments:
+      path: "./e2e-test-check"
+      action:
+        type: "check"
+
+expect:
+  operation: "check"
+  # 使用 JSON Schema 验证，无需指定具体场景
+
+cleanup: ["./e2e-test-check"]

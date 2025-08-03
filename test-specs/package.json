@@ -1,0 +1,20 @@
+{
+  "name": "specs-mcp-e2e-tests",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "End-to-end tests for specs-mcp using OpenAPI definitions",
+  "scripts": {
+    "extract": "node scripts/extract-expected-responses.js",
+    "test": "node tests/modules/testRunner.js",
+    "test:init": "node tests/modules/testRunner.js init",
+    "test:check": "node tests/modules/testRunner.js check",
+    "test:skip": "node tests/modules/testRunner.js skip",
+    "test:confirm": "node tests/modules/testRunner.js confirm",
+    "test:complete-task": "node tests/modules/testRunner.js complete-task",
+    "test:all": "npm run extract && npm run test"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "js-yaml": "^4.1.0"
+  }
+}

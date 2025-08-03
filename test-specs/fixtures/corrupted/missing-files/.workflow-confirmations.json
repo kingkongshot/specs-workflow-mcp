@@ -1,0 +1,12 @@
+{
+  "confirmed": {
+    "requirements": false,
+    "design": false,
+    "tasks": false
+  },
+  "skipped": {
+    "requirements": false,
+    "design": false,
+    "tasks": false
+  }
+}

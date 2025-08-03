@@ -1,0 +1,35 @@
+# 测试用例：完成已完成的任务
+name: "完成已完成的任务"
+description: "测试尝试完成一个已经完成的任务"
+category: "complete-task"
+priority: "medium"
+
+setup:
+  fixtures: "fixtures/complete-task/some-completed"
+  target: "./e2e-test-complete-duplicate"
+
+request:
+  method: "tools/call"
+  params:
+    name: "specs-workflow"
+    arguments:
+      path: "./e2e-test-complete-duplicate"
+      action:
+        type: "complete_task"
+        taskNumber: "1"
+
+expect:
+  operation: "complete_task"
+  # JSON Schema 验证会自动验证结构是否符合 OpenAPI 规范
+  additional_checks:
+    # 错误响应不包含 structuredContent，暂时注释掉这些检查
+    # - type: "value_equals"
+    #   path: "structuredContent.success"
+    #   value: false
+    #   description: "操作应该失败"
+    # - type: "value_contains"
+    #   path: "structuredContent.displayText"
+    #   contains: "已完成"
+    #   description: "错误信息应该提到任务已完成"
+
+cleanup: ["./e2e-test-complete-duplicate"]

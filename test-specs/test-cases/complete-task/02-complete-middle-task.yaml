@@ -1,0 +1,38 @@
+# 测试用例：完成中间的任务
+name: "完成中间的任务"
+description: "测试完成任务列表中间的某个任务"
+category: "complete-task"
+priority: "high"
+
+setup:
+  fixtures: "fixtures/complete-task/some-completed"
+  target: "./e2e-test-complete-middle"
+
+request:
+  method: "tools/call"
+  params:
+    name: "specs-workflow"
+    arguments:
+      path: "./e2e-test-complete-middle"
+      action:
+        type: "complete_task"
+        taskNumber: "3.1"
+
+expect:
+  operation: "complete_task"
+  # JSON Schema 验证会自动验证结构是否符合 OpenAPI 规范
+  additional_checks:
+    - type: "value_equals"
+      path: "structuredContent.taskCompleted"
+      value: "3.1"
+      description: "任务号应该是 3.1"
+    - type: "value_equals"
+      path: "structuredContent.hasNextTask"
+      value: true
+      description: "应该有下一个任务"
+    - type: "file_content"
+      path: "./e2e-test-complete-middle/tasks.md"
+      contains: "[x] 3.1. init 操作测试套件"
+      description: "任务文件中第 3.1 个任务应该被标记为完成"
+
+cleanup: ["./e2e-test-complete-middle"]

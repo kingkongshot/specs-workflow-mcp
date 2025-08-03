@@ -1,0 +1,45 @@
+# 测试用例：重复初始化错误
+name: "重复初始化错误测试"
+description: "测试在已存在项目上再次初始化的错误处理"
+category: "init"
+priority: "high"
+
+setup:
+  # 使用已存在的项目装置
+  fixtures: "fixtures/init/existing-project"
+  target: "./e2e-test-init-duplicate"
+  cleanup: ["./e2e-test-init-duplicate"]
+
+request:
+  method: "tools/call"
+  params:
+    name: "specs-workflow"
+    arguments:
+      path: "./e2e-test-init-duplicate"
+      action:
+        type: "init"
+        featureName: "新功能尝试覆盖"
+        introduction: "尝试在已存在的项目上初始化"
+
+expect:
+  operation: "init"
+  error: true  # 现在返回错误响应
+  error_checks:
+    - type: "error_message"
+      contains: "Project already exists"
+      description: "错误信息应该提示项目已存在"
+    - type: "error_message"
+      contains: "Delete existing files and reinitialize"
+      description: "应该提供删除文件的选项"
+    - type: "error_message"
+      contains: "Initialize in a new directory"
+      description: "应该提供新目录的选项"
+    - type: "error_message"
+      contains: "Continue editing existing project"
+      description: "应该提供继续编辑的选项"
+  additional_checks:
+    - type: "file_exists"
+      path: "./e2e-test-init-duplicate/.workflow-confirmations.json"
+      description: "项目文件应该存在"
+
+cleanup: ["./e2e-test-init-duplicate"]

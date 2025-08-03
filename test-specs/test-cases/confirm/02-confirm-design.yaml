@@ -1,0 +1,41 @@
+# 测试用例：确认设计阶段
+name: "确认设计阶段"
+description: "测试确认设计文档完成并进入任务阶段"
+category: "confirm"
+priority: "high"
+
+setup:
+  fixtures: "fixtures/confirm/design-ready"
+  target: "./e2e-test-confirm-design"
+
+request:
+  method: "tools/call"
+  params:
+    name: "specs-workflow"
+    arguments:
+      path: "./e2e-test-confirm-design"
+      action:
+        type: "confirm"
+
+expect:
+  operation: "confirm"
+  # JSON Schema 验证会自动验证结构是否符合 OpenAPI 规范
+  additional_checks:
+    - type: "file_content"
+      path: "./e2e-test-confirm-design/.workflow-confirmations.json"
+      contains: '"design":true'
+      parent_key: "confirmed"
+      description: "设计阶段应该被标记为已确认"
+    - type: "file_exists"
+      path: "./e2e-test-confirm-design/tasks.md"
+      description: "应该生成任务文档"
+    - type: "value_equals"
+      path: "structuredContent.stage"
+      value: "design"
+      description: "当前阶段应该是设计"
+    - type: "value_equals"
+      path: "structuredContent.nextStage"
+      value: "tasks"
+      description: "下一阶段应该是任务"
+
+cleanup: ["./e2e-test-confirm-design"]

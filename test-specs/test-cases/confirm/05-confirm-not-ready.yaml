@@ -1,0 +1,41 @@
+# 测试用例：确认未准备好的文档
+name: "确认未准备好的文档"
+description: "测试尝试确认还包含模板标记的文档"
+category: "confirm"
+priority: "high"
+
+setup:
+  fixtures: "fixtures/requirements/not-edited"
+  target: "./e2e-test-confirm-not-ready"
+
+request:
+  method: "tools/call"
+  params:
+    name: "specs-workflow"
+    arguments:
+      path: "./e2e-test-confirm-not-ready"
+      action:
+        type: "confirm"
+
+expect:
+  operation: "confirm"
+  # 文档包含模板标记时，confirm 操作应该失败
+  additional_checks:
+    - type: "value_equals"
+      path: "isError"
+      value: true
+      description: "应该是错误响应"
+    - type: "value_contains"
+      path: "content[0].text"
+      value: "Document not ready for confirmation"
+      description: "错误信息应该提到文档未准备好"
+    - type: "value_contains"
+      path: "content[0].text"
+      value: "template markers"
+      description: "错误信息应该提到模板标记"
+    - type: "value_contains"
+      path: "content[0].text"
+      value: "action.type=\"skip\""
+      description: "错误信息应该提示可以使用 skip"
+
+cleanup: ["./e2e-test-confirm-not-ready"]

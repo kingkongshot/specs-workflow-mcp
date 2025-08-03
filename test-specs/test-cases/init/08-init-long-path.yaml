@@ -1,0 +1,30 @@
+# 测试用例：超长路径名
+name: "超长路径名测试"
+description: "测试系统对超长路径名的处理能力"
+category: "init"
+priority: "low"
+
+setup:
+  fixtures: null
+  target: "./e2e-test-init-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-long-path-name-for-testing-path-length-limits"
+  cleanup: ["./e2e-test-init-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-long-path-name-for-testing-path-length-limits"]
+
+request:
+  method: "tools/call"
+  params:
+    name: "specs-workflow"
+    arguments:
+      path: "./e2e-test-init-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-long-path-name-for-testing-path-length-limits"
+      action:
+        type: "init"
+        featureName: "路径长度测试"
+        introduction: "测试超长路径名的处理"
+
+expect:
+  operation: "init"
+  additional_checks:
+    - type: "file_exists"
+      path: "./e2e-test-init-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-long-path-name-for-testing-path-length-limits/requirements.md"
+      description: "应该能在超长路径创建文件"
+
+cleanup: ["./e2e-test-init-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-very-long-path-name-for-testing-path-length-limits"]

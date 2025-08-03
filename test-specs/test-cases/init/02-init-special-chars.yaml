@@ -1,0 +1,35 @@
+# 测试用例：特殊字符初始化
+name: "特殊字符初始化测试"
+description: "测试包含中文、emoji、特殊符号的参数初始化"
+category: "init"
+priority: "medium"
+
+setup:
+  fixtures: null
+  target: "./e2e-test-init-特殊字符😀"
+  cleanup: ["./e2e-test-init-特殊字符😀"]
+
+request:
+  method: "tools/call"
+  params:
+    name: "specs-workflow"
+    arguments:
+      path: "./e2e-test-init-特殊字符😀"
+      action:
+        type: "init"
+        featureName: "测试功能 🚀 Test & Feature (v2.0)"
+        introduction: "包含特殊字符的描述：中文测试、emoji 😊、符号 @#$%^&*()_+ 和引号 \"test\" 'test'"
+
+expect:
+  operation: "init"
+  error: false
+  additional_checks:
+    - type: "file_exists"
+      path: "./e2e-test-init-特殊字符😀/requirements.md"
+      description: "应该在包含特殊字符的路径创建文件"
+    - type: "file_content"
+      path: "./e2e-test-init-特殊字符😀/.workflow-confirmations.json"
+      contains: '"confirmed"'
+      description: "应该正确创建状态文件"
+
+cleanup: ["./e2e-test-init-特殊字符😀"]

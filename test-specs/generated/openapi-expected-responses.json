@@ -1,0 +1,456 @@
+{
+  "init": {
+    "success": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "featureName": {
+                "type": "string"
+              },
+              "nextAction": {
+                "type": "string",
+                "const": "edit_requirements"
+              }
+            },
+            "required": [],
+            "additionalProperties": true
+          },
+          "displayText": {
+            "type": "string"
+          },
+          "resources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "uri": {
+                  "type": "string",
+                  "description": "Resource URI"
+                },
+                "title": {
+                  "type": "string",
+                  "description": "Optional resource title"
+                },
+                "mimeType": {
+                  "type": "string",
+                  "description": "Resource MIME type"
+                },
+                "text": {
+                  "type": "string",
+                  "description": "Optional resource text content"
+                }
+              },
+              "required": [
+                "uri",
+                "mimeType"
+              ],
+              "additionalProperties": true
+            }
+          }
+        },
+        "required": [
+          "success",
+          "data",
+          "displayText"
+        ],
+        "additionalProperties": true
+      },
+      "validation": "json_schema"
+    }
+  },
+  "check": {
+    "success": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "stage": {
+            "type": "string",
+            "enum": [
+              "requirements",
+              "design",
+              "tasks",
+              "completed"
+            ]
+          },
+          "progress": {
+            "type": "object",
+            "properties": {
+              "overall": {
+                "type": "integer",
+                "description": "Overall progress percentage",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "requirements": {
+                "type": "integer",
+                "description": "Requirements phase progress",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "design": {
+                "type": "integer",
+                "description": "Design phase progress",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "tasks": {
+                "type": "integer",
+                "description": "Tasks phase progress",
+                "minimum": 0,
+                "maximum": 100
+              }
+            },
+            "required": [
+              "overall",
+              "requirements",
+              "design",
+              "tasks"
+            ],
+            "additionalProperties": true
+          },
+          "status": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "not_started",
+                  "not_edited",
+                  "in_progress",
+                  "ready_to_confirm",
+                  "confirmed",
+                  "completed"
+                ]
+              },
+              "reason": {
+                "type": "string"
+              },
+              "readyToConfirm": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "additionalProperties": true
+          },
+          "displayText": {
+            "type": "string"
+          },
+          "resources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "uri": {
+                  "type": "string",
+                  "description": "Resource URI"
+                },
+                "title": {
+                  "type": "string",
+                  "description": "Optional resource title"
+                },
+                "mimeType": {
+                  "type": "string",
+                  "description": "Resource MIME type"
+                },
+                "text": {
+                  "type": "string",
+                  "description": "Optional resource text content"
+                }
+              },
+              "required": [
+                "uri",
+                "mimeType"
+              ],
+              "additionalProperties": true
+            }
+          }
+        },
+        "required": [
+          "stage",
+          "progress",
+          "status",
+          "displayText"
+        ],
+        "additionalProperties": true
+      },
+      "validation": "json_schema"
+    }
+  },
+  "skip": {
+    "success": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "stage": {
+            "type": "string"
+          },
+          "skipped": {
+            "type": "boolean"
+          },
+          "progress": {
+            "type": "object",
+            "properties": {
+              "overall": {
+                "type": "integer",
+                "description": "Overall progress percentage",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "requirements": {
+                "type": "integer",
+                "description": "Requirements phase progress",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "design": {
+                "type": "integer",
+                "description": "Design phase progress",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "tasks": {
+                "type": "integer",
+                "description": "Tasks phase progress",
+                "minimum": 0,
+                "maximum": 100
+              }
+            },
+            "required": [
+              "overall",
+              "requirements",
+              "design",
+              "tasks"
+            ],
+            "additionalProperties": true
+          },
+          "displayText": {
+            "type": "string"
+          },
+          "resources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "uri": {
+                  "type": "string",
+                  "description": "Resource URI"
+                },
+                "title": {
+                  "type": "string",
+                  "description": "Optional resource title"
+                },
+                "mimeType": {
+                  "type": "string",
+                  "description": "Resource MIME type"
+                },
+                "text": {
+                  "type": "string",
+                  "description": "Optional resource text content"
+                }
+              },
+              "required": [
+                "uri",
+                "mimeType"
+              ],
+              "additionalProperties": true
+            }
+          }
+        },
+        "required": [
+          "stage",
+          "skipped",
+          "displayText",
+          "progress"
+        ],
+        "additionalProperties": true
+      },
+      "validation": "json_schema"
+    }
+  },
+  "confirm": {
+    "success": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "stage": {
+            "type": "string"
+          },
+          "confirmed": {
+            "type": "boolean"
+          },
+          "nextStage": {
+            "type": "string",
+            "nullable": true
+          },
+          "progress": {
+            "type": "object",
+            "properties": {
+              "overall": {
+                "type": "integer",
+                "description": "Overall progress percentage",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "requirements": {
+                "type": "integer",
+                "description": "Requirements phase progress",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "design": {
+                "type": "integer",
+                "description": "Design phase progress",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "tasks": {
+                "type": "integer",
+                "description": "Tasks phase progress",
+                "minimum": 0,
+                "maximum": 100
+              }
+            },
+            "required": [
+              "overall",
+              "requirements",
+              "design",
+              "tasks"
+            ],
+            "additionalProperties": true
+          },
+          "displayText": {
+            "type": "string"
+          },
+          "resources": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "uri": {
+                  "type": "string",
+                  "description": "Resource URI"
+                },
+                "title": {
+                  "type": "string",
+                  "description": "Optional resource title"
+                },
+                "mimeType": {
+                  "type": "string",
+                  "description": "Resource MIME type"
+                },
+                "text": {
+                  "type": "string",
+                  "description": "Optional resource text content"
+                }
+              },
+              "required": [
+                "uri",
+                "mimeType"
+              ],
+              "additionalProperties": true
+            }
+          }
+        },
+        "required": [
+          "stage",
+          "confirmed",
+          "nextStage",
+          "displayText",
+          "progress"
+        ],
+        "additionalProperties": true
+      },
+      "validation": "json_schema"
+    }
+  },
+  "complete_task": {
+    "success": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "taskCompleted": {
+            "type": "string",
+            "description": "Completed task number"
+          },
+          "hasNextTask": {
+            "type": "boolean",
+            "description": "Whether there is a next task"
+          },
+          "nextTask": {
+            "type": "object",
+            "properties": {
+              "number": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              }
+            },
+            "required": [],
+            "additionalProperties": true,
+            "nullable": true
+          },
+          "displayText": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "taskCompleted",
+          "displayText"
+        ],
+        "additionalProperties": true
+      },
+      "validation": "json_schema"
+    }
+  },
+  "errors": {
+    "invalidPath": {
+      "displayText": "❌ Error: Invalid specification directory\n\nPath ${path} does not exist or is not a valid specification directory.\nPlease ensure the path is correct and has been initialized.\n",
+      "validation": {
+        "isError": true,
+        "contentContains": [
+          "Error",
+          "Invalid",
+          "does not exist"
+        ]
+      }
+    },
+    "alreadyInitialized": {
+      "displayText": "❌ Project already exists\n\n📁 Path: ${path}\n📄 Existing files: ${existingFiles}\n\nPlease choose one of the following actions:\n1. Delete existing files and reinitialize: rm -rf ${path}/*\n2. Initialize in a new directory: use a different path parameter\n3. Continue editing existing project: use action.type=\"check\" to check project status and read existing documents to see if adjustments are needed\n",
+      "validation": {
+        "isError": true,
+        "contentContains": []
+      }
+    },
+    "missingParameters": {
+      "displayText": "❌ Error: Missing required parameters\n\n${action} operation requires the following parameters:\n${missingParams}\n\nPlease provide complete parameters and try again.\n",
+      "validation": {
+        "isError": true,
+        "contentContains": [
+          "Error",
+          "required"
+        ]
+      }
+    },
+    "documentNotEdited": {
+      "displayText": "❌ Error: Document not ready for confirmation\n\n📄 ${documentName} still contains template markers and has not been edited.\n\nThe document appears to be in its initial state with placeholder content.\nBefore confirming, you must edit the document and then use action.type=\"check\" to verify the document is ready.\n\nIf you want to skip writing this document:\n- Use action.type=\"skip\" to bypass this stage\n- Note: Skipping important documents may impact project quality\n",
+      "validation": {
+        "isError": true,
+        "contentContains": [
+          "Error"
+        ]
+      }
+    }
+  }
+}

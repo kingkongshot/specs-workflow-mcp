@@ -1,0 +1,31 @@
+# 测试用例：空字符串参数
+name: "空字符串参数测试"
+description: "测试系统对空字符串参数的错误处理"
+category: "init"
+priority: "medium"
+
+setup:
+  fixtures: null
+  target: "./e2e-test-init-empty-string"
+  cleanup: ["./e2e-test-init-empty-string"]
+
+request:
+  method: "tools/call"
+  params:
+    name: "specs-workflow"
+    arguments:
+      path: "./e2e-test-init-empty-string"
+      action:
+        type: "init"
+        featureName: ""
+        introduction: ""
+
+expect:
+  operation: "init"
+  error: true
+  error_checks:
+    - type: "error_message"
+      contains: "featureName"
+      description: "应该提示缺少功能名称"
+
+cleanup: ["./e2e-test-init-empty-string"]

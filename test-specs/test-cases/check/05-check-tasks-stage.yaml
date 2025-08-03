@@ -1,0 +1,37 @@
+# 测试用例：检查任务阶段
+name: "检查任务阶段文档"
+description: "测试检查任务阶段的项目状态，包括任务完成进度"
+category: "check"
+priority: "high"
+
+setup:
+  fixtures: "fixtures/tasks/in-progress"
+  target: "./e2e-test-check-tasks"
+
+request:
+  method: "tools/call"
+  params:
+    name: "specs-workflow"
+    arguments:
+      path: "./e2e-test-check-tasks"
+      action:
+        type: "check"
+
+expect:
+  operation: "check"
+  # JSON Schema 验证会自动验证结构是否符合 OpenAPI 规范
+  additional_checks:
+    - type: "value_equals"
+      path: "structuredContent.stage"
+      value: "tasks"
+      description: "应该处于任务阶段"
+    - type: "value_equals"
+      path: "structuredContent.progress.requirements"
+      value: 100
+      description: "需求阶段应该已完成"
+    - type: "value_equals"
+      path: "structuredContent.progress.design"
+      value: 100
+      description: "设计阶段应该已完成"
+
+cleanup: ["./e2e-test-check-tasks"]

@@ -1,0 +1,42 @@
+# 测试用例：完成最后一个任务
+name: "完成最后一个任务"
+description: "测试完成任务列表中的最后一个任务，完成整个工作流"
+category: "complete-task"
+priority: "high"
+
+setup:
+  fixtures: "fixtures/complete-task/almost-done"
+  target: "./e2e-test-complete-last"
+
+request:
+  method: "tools/call"
+  params:
+    name: "specs-workflow"
+    arguments:
+      path: "./e2e-test-complete-last"
+      action:
+        type: "complete_task"
+        taskNumber: "10"
+
+expect:
+  operation: "complete_task"
+  # JSON Schema 验证会自动验证结构是否符合 OpenAPI 规范
+  additional_checks:
+    - type: "value_equals"
+      path: "structuredContent.taskCompleted"
+      value: "10"
+      description: "任务号应该是 10"
+    - type: "value_equals"
+      path: "structuredContent.hasNextTask"
+      value: false
+      description: "没有下一个任务"
+    - type: "value_equals"
+      path: "structuredContent.nextTask"
+      value: null
+      description: "下一个任务为空"
+    - type: "value_contains"
+      path: "structuredContent.displayText"
+      contains: "All tasks completed"
+      description: "显示文本应该包含全部完成的信息"
+
+cleanup: ["./e2e-test-complete-last"]

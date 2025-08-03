@@ -1,0 +1,37 @@
+# 测试用例：缺少 featureName 参数
+name: "缺少功能名称参数测试"
+description: "测试缺少必需的 featureName 参数时的错误处理"
+category: "init"
+priority: "high"
+
+setup:
+  fixtures: null
+  target: "./e2e-test-init-missing-param1"
+  cleanup: ["./e2e-test-init-missing-param1"]
+
+request:
+  method: "tools/call"
+  params:
+    name: "specs-workflow"
+    arguments:
+      path: "./e2e-test-init-missing-param1"
+      action:
+        type: "init"
+        # 缺少 featureName
+        introduction: "这是项目介绍，但缺少功能名称"
+
+expect:
+  operation: "init"
+  error: true
+  error_checks:
+    - type: "error_message"
+      contains: "featureName"
+      description: "错误消息应该提到缺少 featureName"
+    - type: "error_message"
+      contains: "requires"
+      description: "错误消息应该说明这是必需参数"
+    - type: "no_files_created"
+      path: "./e2e-test-init-missing-param1"
+      description: "不应该创建任何文件"
+
+cleanup: ["./e2e-test-init-missing-param1"]
