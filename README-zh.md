@@ -6,7 +6,7 @@
 
 [English](README.md) | [简体中文](README-zh.md)
 
-一个智能的 MCP 服务器，引导 AI 通过结构化工作流创建软件项目规格文档：需求 → 设计 → 任务。
+一个智能的 MCP 服务器，引导 AI 通过结构化的 **spec workflow** 创建软件项目规格文档：需求 → 设计 → 任务。
 
 ## 快速开始 - 如何使用
 
@@ -14,11 +14,11 @@
 
 ### 开始新项目
 ```
-"帮我用 specs 创建一个用户认证系统"
+"帮我用 spec workflow 创建一个用户认证系统"
 ```
 或
 ```
-"用 specs 把我们的聊天内容整理成项目文档"
+"用 spec workflow 把我们的聊天内容整理成项目文档"
 ```
 
 AI 将会：
@@ -29,7 +29,7 @@ AI 将会：
 
 ### 继续现有项目
 ```
-"用 specs check ./my-project"
+"用 spec workflow check ./my-project"
 ```
 
 AI 会从上次中断的地方继续工作流程。
@@ -42,6 +42,63 @@ AI 会从上次中断的地方继续工作流程。
 4. **按任务开发** - 清晰、可追踪的实现
 
 每一步都需要你的批准才能继续，确保你始终掌控项目方向。
+
+## 文档结构
+
+Spec Workflow MCP 将你的项目文档组织成模块。你可以直接向模型说"文档放在 my-project/example/ 目录"。如果没有指定特定目录，默认会使用 `specs` 目录。
+
+**重要**：虽然目录位置灵活，但每个功能模块必须将所有三个文档文件放在同一目录中，以便正确跟踪工作流和管理进度。
+
+### 单模块结构
+```
+my-project/specs/
+├── requirements.md              # 用户故事和功能需求
+├── design.md                    # 技术架构和设计决策
+├── tasks.md                     # 实施任务列表
+└── .workflow-confirmations.json # 工作流状态和进度跟踪
+```
+
+### 多模块示例
+```
+my-project/specs/
+├── user-authentication/
+│   ├── requirements.md              # 认证用户故事：登录、注册、密码重置
+│   ├── design.md                    # JWT 策略、数据库模式、API 端点
+│   ├── tasks.md                     # 任务：设置数据库、实现 JWT、创建 API 路由
+│   └── .workflow-confirmations.json # 状态：需求 ✓、设计 ✓、任务进行中
+│
+├── payment-system/
+│   ├── requirements.md              # 支付处理需求、合规需求
+│   ├── design.md                    # Stripe 集成、webhook 处理、安全性
+│   ├── tasks.md                     # 任务：Stripe SDK 设置、webhook 端点、测试
+│   └── .workflow-confirmations.json # 状态：需求 ✓、设计待定
+│
+└── notification-service/
+    ├── requirements.md              # 邮件/短信/推送通知需求
+    ├── design.md                    # 队列架构、模板系统、提供商
+    ├── tasks.md                     # 任务：设置队列、集成提供商、模板
+    └── .workflow-confirmations.json # 状态：需求待定
+```
+
+这种模块化方法允许你：
+- 并行处理多个功能
+- 独立跟踪每个模块的进度
+- 保持清晰的关注点分离
+- 随时恢复任何模块的工作
+
+### 灵活的目录放置
+```
+# 你可以指定自定义目录：
+"用 spec workflow 在 ./src/features/auth 创建认证文档"
+"用 spec workflow 在 ./modules/payment 组织支付功能"
+
+# 结果：文档将创建在你指定的位置
+./src/features/auth/
+├── requirements.md
+├── design.md
+├── tasks.md
+└── .workflow-confirmations.json
+```
 
 ## 安装
 
@@ -199,7 +256,7 @@ npm run build
 
 ### 2. AI 创建需求
 ```
-AI："我来帮你创建用户认证的 specs。让我先从需求文档开始..."
+AI："我来帮你创建用户认证的 spec workflow。让我先从需求文档开始..."
 
 [创建包含用户故事、功能需求等的 requirements.md]
 
@@ -322,5 +379,3 @@ MIT 许可证 - 详见 LICENSE 文件
 <a href="https://glama.ai/mcp/servers/@kingkongshot/specs-workflow-mcp">
   <img width="380" height="200" src="https://glama.ai/mcp/servers/@kingkongshot/specs-workflow-mcp/badge" alt="Spec Workflow MCP server" />
 </a>
-
-使用 Model Context Protocol 用 ❤️ 构建

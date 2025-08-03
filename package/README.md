@@ -6,7 +6,7 @@
 
 [English](https://github.com/kingkongshot/specs-workflow-mcp/blob/main/README.md) | [简体中文](https://github.com/kingkongshot/specs-workflow-mcp/blob/main/README-zh.md)
 
-An intelligent MCP server that guides AI to create software project specifications through a structured workflow: Requirements → Design → Tasks.
+An intelligent MCP server that guides AI to create software project specifications through a structured **spec workflow**: Requirements → Design → Tasks.
 
 ## Quick Start - How to Use
 
@@ -14,11 +14,11 @@ After installation, simply tell your AI assistant:
 
 ### Start a New Project
 ```
-"Help me use specs to create a user authentication system"
+"Help me use spec workflow to create a user authentication system"
 ```
 or
 ```
-"Use specs to organize our chat history into project documentation"
+"Use spec workflow to organize our chat history into project documentation"
 ```
 
 The AI will:
@@ -29,7 +29,7 @@ The AI will:
 
 ### Continue Existing Project
 ```
-"Use specs to check ./my-project"
+"Use spec workflow to check ./my-project"
 ```
 
 The AI will pick up where you left off and continue the workflow.
@@ -42,6 +42,63 @@ The AI will pick up where you left off and continue the workflow.
 4. **Development follows tasks** - Clear, trackable implementation
 
 Each step requires your approval before proceeding, ensuring you maintain control over the project direction.
+
+## Document Structure
+
+Spec Workflow MCP organizes your project documentation into modules. You can tell the AI to place documents in any directory by saying "put the docs in my-project/example/". If no specific directory is requested, it will default to a `specs` directory. 
+
+**Important**: While the directory location is flexible, each feature module MUST contain all three documentation files together in the same directory for proper workflow tracking and progress management.
+
+### Single Module Structure
+```
+my-project/specs/
+├── requirements.md              # User stories and functional requirements
+├── design.md                    # Technical architecture and design decisions
+├── tasks.md                     # Implementation task list
+└── .workflow-confirmations.json # Workflow state and progress tracking
+```
+
+### Multiple Modules Example
+```
+my-project/specs/
+├── user-authentication/
+│   ├── requirements.md              # Auth user stories: login, registration, password reset
+│   ├── design.md                    # JWT strategy, database schema, API endpoints
+│   ├── tasks.md                     # Tasks: setup DB, implement JWT, create API routes
+│   └── .workflow-confirmations.json # Status: requirements ✓, design ✓, tasks in progress
+│
+├── payment-system/
+│   ├── requirements.md              # Payment processing requirements, compliance needs
+│   ├── design.md                    # Stripe integration, webhook handling, security
+│   ├── tasks.md                     # Tasks: Stripe SDK setup, webhook endpoints, testing
+│   └── .workflow-confirmations.json # Status: requirements ✓, design pending
+│
+└── notification-service/
+    ├── requirements.md              # Email/SMS/Push notification requirements
+    ├── design.md                    # Queue architecture, template system, providers
+    ├── tasks.md                     # Tasks: setup queues, integrate providers, templates
+    └── .workflow-confirmations.json # Status: requirements pending
+```
+
+This modular approach allows you to:
+- Work on multiple features in parallel
+- Track progress independently for each module
+- Maintain clear separation of concerns
+- Resume work on any module at any time
+
+### Flexible Directory Placement
+```
+# You can specify custom directories:
+"Use spec workflow to create auth docs in ./src/features/auth"
+"Use spec workflow to organize payments in ./modules/payment"
+
+# Result: Documents will be created in your specified location
+./src/features/auth/
+├── requirements.md
+├── design.md
+├── tasks.md
+└── .workflow-confirmations.json
+```
 
 ## Installation
 
@@ -199,7 +256,7 @@ You: "I need to build a user authentication system"
 
 ### 2. AI creates requirements
 ```
-AI: "I'll help you create specs for user authentication. Let me start with the requirements document..."
+AI: "I'll help you create spec workflow for user authentication. Let me start with the requirements document..."
 
 [Creates requirements.md with user stories, functional requirements, etc.]
 
@@ -322,5 +379,3 @@ MIT License - see LICENSE file for details
 <a href="https://glama.ai/mcp/servers/@kingkongshot/specs-workflow-mcp">
   <img width="380" height="200" src="https://glama.ai/mcp/servers/@kingkongshot/specs-workflow-mcp/badge" alt="Spec Workflow MCP server" />
 </a>
-
-Built with ❤️ using the Model Context Protocol
