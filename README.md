@@ -4,6 +4,10 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MCP](https://img.shields.io/badge/MCP-Compatible-blue)](https://modelcontextprotocol.com)
 
+<a href="https://glama.ai/mcp/servers/@kingkongshot/specs-workflow-mcp">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@kingkongshot/specs-workflow-mcp/badge" alt="Spec Workflow MCP server" />
+</a>
+
 [English](README.md) | [简体中文](README-zh.md)
 
 An intelligent MCP server for managing software project specifications through a structured workflow of requirements, design, and implementation documents.
