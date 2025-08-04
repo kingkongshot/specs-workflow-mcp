@@ -1,308 +1,192 @@
-# Spec Workflow MCP
-
-[![npm version](https://img.shields.io/npm/v/spec-workflow-mcp.svg)](https://www.npmjs.com/package/spec-workflow-mcp)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![MCP](https://img.shields.io/badge/MCP-Compatible-blue)](https://modelcontextprotocol.com)
+# Spec Workflow MCP - Test Suite (dev branch)
 
 [English](README.md) | [简体中文](README-zh.md)
 
-An intelligent MCP server for managing software project specifications through a structured workflow of requirements, design, and implementation documents.
+⚠️ **Note**: This is the dev branch, specifically for test suite development and debugging. For production use of Spec Workflow MCP, please switch to the [main branch](https://github.com/kingkongshot/specs-workflow-mcp/tree/main).
 
-## What is Spec Workflow MCP?
+## Test Suite Overview
 
-Spec Workflow MCP helps development teams maintain high-quality project documentation by providing an AI-powered workflow that guides you through creating comprehensive specifications.
+This test suite provides comprehensive end-to-end testing coverage for Spec Workflow MCP, ensuring the correctness and stability of all workflow operations.
 
-### ❌ Without Spec Workflow MCP
+## Quick Start
 
-- Inconsistent documentation across projects
-- Missing critical requirements details  
-- Unstructured design decisions
-- Unclear implementation tasks
-- Manual tracking of document completion
-- **AI jumps between tasks randomly without structure**
-- **No connection between requirements and actual code implementation**
-
-### ✅ With Spec Workflow MCP
-
-- Standardized document templates for requirements, design, and tasks
-- AI-guided document generation based on best practices
-- Automatic progress tracking and workflow management
-- Smart validation of document completeness
-- Seamless integration with Claude and other MCP-compatible tools
-- **AI follows task order systematically, completing one before moving to the next**
-- **Requirements → Design → Tasks workflow ensures code aligns with business needs**
-
-## Installation
-
-### Requirements
-
-- Node.js ≥ v18.0.0
-- npm or yarn
-- Claude Desktop or any MCP-compatible client
-
-### Install in Different MCP Clients
-
-#### Claude Code (Recommended)
-
-Use the Claude CLI to add the MCP server:
+### Install Dependencies
 
 ```bash
-claude mcp add spec-workflow-mcp -s user -- npx -y spec-workflow-mcp@latest
-```
-
-#### Claude Desktop
-
-Add to your Claude Desktop configuration:
-- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- Windows: `%APPDATA%/Claude/claude_desktop_config.json`
-- Linux: `~/.config/Claude/claude_desktop_config.json`
-
-```json
-{
-  "mcpServers": {
-    "spec-workflow": {
-      "command": "npx",
-      "args": ["-y", "spec-workflow-mcp@latest"]
-    }
-  }
-}
-```
-
-#### Cursor
-
-Add to your Cursor configuration (`~/.cursor/config.json`):
-
-```json
-{
-  "mcpServers": {
-    "spec-workflow": {
-      "command": "npx",
-      "args": ["-y", "spec-workflow-mcp@latest"]
-    }
-  }
-}
-```
-
-#### Cline
-
-Use Cline's MCP server management UI to add the server:
-
-1. Open VS Code with Cline extension
-2. Open Cline settings (gear icon)
-3. Navigate to MCP Servers section
-4. Add new server with:
-   - Command: `npx`
-   - Arguments: `-y spec-workflow-mcp@latest`
-
-#### Windsurf (Codeium)
-
-Add to your Windsurf configuration (`~/.codeium/windsurf/mcp_config.json`):
-
-```json
-{
-  "mcpServers": {
-    "spec-workflow": {
-      "command": "npx",
-      "args": ["-y", "spec-workflow-mcp@latest"],
-      "env": {},
-      "autoApprove": [],
-      "disabled": false,
-      "timeout": 60,
-      "transportType": "stdio"
-    }
-  }
-}
-```
-
-#### VS Code (with MCP extension)
-
-Add to your VS Code settings (`settings.json`):
-
-```json
-{
-  "mcp.servers": {
-    "spec-workflow": {
-      "command": "npx",
-      "args": ["-y", "spec-workflow-mcp@latest"]
-    }
-  }
-}
-```
-
-#### Zed
-
-Add to your Zed configuration (`~/.config/zed/settings.json`):
-
-```json
-{
-  "assistant": {
-    "version": "2",
-    "mcp": {
-      "servers": {
-        "spec-workflow": {
-          "command": "npx",
-          "args": ["-y", "spec-workflow-mcp@latest"]
-        }
-      }
-    }
-  }
-}
-```
-
-### Install from Source
-
-```bash
-git clone https://github.com/kingkongshot/specs-mcp.git
-cd specs-mcp
+# Project root directory
 npm install
-npm run build
-```
 
-Then add to Claude Desktop configuration:
-
-```json
-{
-  "mcpServers": {
-    "spec-workflow": {
-      "command": "node",
-      "args": ["/absolute/path/to/specs-mcp/dist/index.js"]
-    }
-  }
-}
-```
-
-## Usage
-
-Once installed, the MCP server provides the following commands through Claude:
-
-### Initialize a New Feature
-
-```
-Initialize spec workflow for "user authentication feature"
-```
-
-This creates a structured requirements document with sections for:
-- Feature overview
-- User stories
-- Functional requirements
-- Non-functional requirements
-- Technical constraints
-
-### Check Progress and Generate Next Document
-
-```
-Check spec workflow progress
-```
-
-The server analyzes your current documentation and:
-- Shows completion status for each section
-- Identifies missing or incomplete areas
-- Automatically generates the next document in the workflow
-
-### Complete Tasks
-
-```
-Complete task #3 in the implementation plan
-```
-
-Mark specific tasks as completed and track overall progress.
-
-### Skip Stages
-
-```
-Skip the design stage and go to implementation
-```
-
-Flexibility to adapt the workflow to your project needs.
-
-## Workflow Stages
-
-1. **Requirements Gathering** → 2. **System Design** → 3. **Implementation Planning**
-
-Each stage has:
-- Structured templates
-- Validation rules
-- AI-powered content generation
-- Progress tracking
-
-## Features
-
-- 📝 **Smart Templates**: Pre-defined document structures following best practices
-- 🤖 **AI-Powered Generation**: Intelligent content suggestions based on your project context
-- ✅ **Progress Tracking**: Visual progress indicators and completion tracking
-- 🔄 **Flexible Workflow**: Skip stages or adapt the process to your needs
-- 📊 **Quality Validation**: Automatic checks for document completeness
-- 🔗 **MCP Integration**: Works seamlessly with Claude and other MCP clients
-- 🎯 **Sequential Task Execution**: AI completes tasks in order, maintaining focus and context
-- 🔄 **Requirements-Driven Development**: From business needs to code implementation in structured steps
-
-## Example Workflow
-
-1. Start with a feature idea:
-   ```
-   "I need to build a user authentication system"
-   ```
-
-2. Initialize the workflow:
-   ```
-   Initialize spec workflow for "user authentication"
-   ```
-
-3. Review and enhance the generated requirements
-
-4. Check progress and generate design document:
-   ```
-   Check workflow progress
-   ```
-
-5. Continue through design and implementation stages
-
-6. Track task completion:
-   ```
-   Complete task #1: Set up authentication database schema
-   ```
-
-## Development
-
-### Build from Source
-
-```bash
+# Test suite directory
+cd test-specs
 npm install
-npm run build
-```
-
-### Run in Development Mode
-
-```bash
-npm run dev
 ```
 
 ### Run Tests
 
 ```bash
+# Run all tests
 npm test
+
+# Run specific test categories
+npm test -- init        # Run initialization tests only
+npm test -- check       # Run check tests only
+npm test -- complete    # Run task completion tests only
+npm test -- confirm     # Run confirmation tests only
+npm test -- skip        # Run skip tests only
 ```
 
-### Debug with MCP Inspector
+### Test Reports
+
+After test completion, reports are generated in the `test-specs/reports/` directory:
+- `test-report.html` - Visual test report
+- `test-report.md` - Markdown format report
+- Detailed output files for each test case
+
+## Test Suite Structure
+
+```
+test-specs/
+├── test-cases/           # Test case definitions
+│   ├── init/            # Initialization tests
+│   ├── check/           # Check operation tests
+│   ├── complete-task/   # Task completion tests
+│   ├── confirm/         # Confirmation tests
+│   └── skip/            # Skip operation tests
+├── fixtures/            # Test data fixtures
+├── scripts/             # Test utility scripts
+└── reports/             # Test report outputs
+```
+
+## Test Categories
+
+### 1. Initialization Tests (init)
+- Basic project initialization
+- Special character handling
+- Duplicate initialization protection
+- Parameter validation
+
+### 2. Check Tests (check)
+- Workflow state checking
+- Document completeness validation
+- Progress tracking
+- Edge case handling
+
+### 3. Task Completion Tests (complete-task)
+- Single task completion
+- Subtask handling
+- Multi-level tasks
+- Format compatibility
+- Duplicate numbering handling
+- Orphan subtasks
+
+### 4. Confirmation Tests (confirm)
+- Stage confirmation flow
+- State transition validation
+- Duplicate confirmation protection
+
+### 5. Skip Tests (skip)
+- Stage skipping functionality
+- Workflow flexibility
+
+## Writing New Test Cases
+
+### 1. Create Test Case File
+
+Create a YAML file in the appropriate `test-cases/` directory:
+
+```yaml
+name: "Test name"
+description: "Test description"
+category: "Test category"
+priority: "high|medium|low"
+
+setup:
+  fixtures: "fixtures/path"  # optional
+  target: "./test-target-path"
+
+request:
+  method: "tools/call"
+  params:
+    name: "specs-workflow"
+    arguments:
+      path: "./path"
+      action:
+        type: "action-type"
+        # other parameters...
+
+expect:
+  operation: "expected-operation"
+  additional_checks:
+    - type: "check-type"
+      # check parameters...
+```
+
+### 2. Prepare Test Fixtures
+
+If preset files are needed, create the appropriate structure in the `fixtures/` directory:
+
+```
+fixtures/
+└── your-test/
+    ├── requirements.md
+    ├── design.md
+    ├── tasks.md
+    └── .workflow-confirmations.json
+```
+
+### 3. Run Single Test
 
 ```bash
-npm run inspector
+# Use test file name (without extension)
+npm test -- --test "your-test-name"
 ```
 
-## Contributing
+## Debugging Tips
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+### 1. Enable Verbose Logging
 
-## License
+```bash
+DEBUG=* npm test
+```
 
-MIT License - see LICENSE file for details
+### 2. Preserve Test Files
 
-## Links
+Don't automatically clean up generated files after tests:
 
-- [GitHub Repository](https://github.com/kingkongshot/specs-mcp)
-- [NPM Package](https://www.npmjs.com/package/spec-workflow-mcp)
-- [MCP Documentation](https://modelcontextprotocol.com)
+```bash
+NO_CLEANUP=true npm test
+```
 
----
+### 3. Interactive Debugging
 
-Built with ❤️ using the Model Context Protocol
+```bash
+npm run debug-test -- "test-name"
+```
+
+## Continuous Integration
+
+The test suite is integrated with GitHub Actions, automatically running tests on every push. See `.github/workflows/test.yml` for configuration details.
+
+## FAQ
+
+### Q: Test failed but can't see detailed errors?
+A: Check specific test output files in the `reports/` directory, or use the `DEBUG=*` environment variable.
+
+### Q: How to test specific edge cases?
+A: Refer to edge case test examples in the `test-cases/complete-task/` directory.
+
+### Q: How does the test environment differ from actual usage?
+A: The test environment uses the same core code but runs in isolated temporary directories, not affecting actual projects.
+
+## Contributing Guidelines
+
+1. New features must include corresponding test cases
+2. Bug fixes should add regression tests
+3. Maintain test case independence and repeatability
+4. Use meaningful test names and descriptions
+
+## Related Links
+
+- [Main Project Documentation](https://github.com/kingkongshot/specs-workflow-mcp/tree/main)
+- [MCP Protocol Documentation](https://modelcontextprotocol.com)
+- [Issue Tracker](https://github.com/kingkongshot/specs-workflow-mcp/issues)
