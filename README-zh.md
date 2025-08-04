@@ -6,104 +6,123 @@
 
 [English](README.md) | [简体中文](README-zh.md)
 
-一个智能的 MCP 服务器，引导 AI 通过结构化的 **spec workflow** 创建软件项目规格文档：需求 → 设计 → 任务。
+通过结构化的 **需求 → 设计 → 任务** 工作流，引导 AI 系统地完成软件开发，确保代码实现与业务需求始终保持一致。
 
-## 快速开始 - 如何使用
+## 为什么需要它？
 
-安装后，只需告诉你的 AI 助手：
+### ❌ 没有 Spec Workflow 时
+- AI 在任务间随机跳跃，缺乏系统性
+- 需求与实际代码实现脱节
+- 文档散乱，难以追踪项目进度
+- 缺少设计决策的记录
 
-### 开始新项目
+### ✅ 使用 Spec Workflow 后
+- AI 按顺序完成任务，保持专注和上下文
+- 从用户故事到代码实现的完整追踪
+- 标准化文档模板，自动进度管理
+- 每个阶段都需要确认，确保方向正确
+
+## 快速开始
+
+### 1. 安装（以 Claude Code 为例）
+```bash
+claude mcp add spec-workflow-mcp -s user -- npx -y spec-workflow-mcp@latest
+```
+
+其他客户端请参考[完整安装指南](#安装指南)。
+
+### 2. 开始新项目
 ```
 "帮我用 spec workflow 创建一个用户认证系统"
 ```
-或
-```
-"用 spec workflow 把我们的聊天内容整理成项目文档"
-```
 
-AI 将会：
-1. 📝 基于用户故事创建需求文档
-2. 🎨 生成包含技术细节的设计文档
-3. ✅ 列出清晰的实现任务
-4. 🚀 按照任务列表指导开发
-
-### 继续现有项目
+### 3. 继续现有项目
 ```
 "用 spec workflow check ./my-project"
 ```
 
-AI 会从上次中断的地方继续工作流程。
+AI 会自动检测项目状态并从上次中断的地方继续。
 
-### 工作原理
+## 工作流程示例
 
-1. **你描述想要什么** - 只需解释你的项目想法
-2. **AI 创建结构化文档** - 需求 → 设计 → 任务
-3. **你审查并批准** - 每个阶段都需要你的确认
-4. **按任务开发** - 清晰、可追踪的实现
+### 1. 你描述需求
+```
+你："我需要构建一个用户认证系统"
+```
 
-每一步都需要你的批准才能继续，确保你始终掌控项目方向。
+### 2. AI 创建结构化文档
+```
+AI："我来帮你创建用户认证的 spec workflow..."
 
-## 文档结构
+📝 requirements.md - 用户故事和功能需求
+🎨 design.md - 技术架构和设计决策  
+✅ tasks.md - 具体实现任务列表
+```
 
-Spec Workflow MCP 将你的项目文档组织成模块。你可以直接向模型说"文档放在 my-project/example/ 目录"。如果没有指定特定目录，默认会使用 `specs` 目录。
+### 3. 逐步审批和实施
+每个阶段完成后，AI 会请求你的确认才继续下一步，确保项目始终在正确的轨道上。
 
-**重要**：虽然目录位置灵活，但每个功能模块必须将所有三个文档文件放在同一目录中，以便正确跟踪工作流和管理进度。
+## 文档组织
 
-### 单模块结构
+### 基础结构
 ```
 my-project/specs/
-├── requirements.md              # 用户故事和功能需求
-├── design.md                    # 技术架构和设计决策
-├── tasks.md                     # 实施任务列表
-└── .workflow-confirmations.json # 工作流状态和进度跟踪
+├── requirements.md              # 需求：用户故事、功能规格
+├── design.md                    # 设计：架构、API、数据模型
+├── tasks.md                     # 任务：编号的实施步骤
+└── .workflow-confirmations.json # 状态：自动进度追踪
 ```
 
-### 多模块示例
+### 多模块项目
 ```
 my-project/specs/
-├── user-authentication/
-│   ├── requirements.md              # 认证用户故事：登录、注册、密码重置
-│   ├── design.md                    # JWT 策略、数据库模式、API 端点
-│   ├── tasks.md                     # 任务：设置数据库、实现 JWT、创建 API 路由
-│   └── .workflow-confirmations.json # 状态：需求 ✓、设计 ✓、任务进行中
-│
-├── payment-system/
-│   ├── requirements.md              # 支付处理需求、合规需求
-│   ├── design.md                    # Stripe 集成、webhook 处理、安全性
-│   ├── tasks.md                     # 任务：Stripe SDK 设置、webhook 端点、测试
-│   └── .workflow-confirmations.json # 状态：需求 ✓、设计待定
-│
-└── notification-service/
-    ├── requirements.md              # 邮件/短信/推送通知需求
-    ├── design.md                    # 队列架构、模板系统、提供商
-    ├── tasks.md                     # 任务：设置队列、集成提供商、模板
-    └── .workflow-confirmations.json # 状态：需求待定
+├── user-authentication/         # 认证模块
+├── payment-system/             # 支付模块
+└── notification-service/       # 通知模块
 ```
 
-这种模块化方法允许你：
-- 并行处理多个功能
-- 独立跟踪每个模块的进度
-- 保持清晰的关注点分离
-- 随时恢复任何模块的工作
+你可以指定任意目录：`"用 spec workflow 在 ./src/features/auth 创建认证文档"`
 
-### 灵活的目录放置
+## AI 使用指南
+
+### 🤖 让 AI 更好地使用此工具
+
+在你的 AI 助手配置中添加以下引导词，可以让 AI 更智能地使用 Spec Workflow。
+
+> **配置提醒**：请根据您的实际情况修改以下内容：
+> 1. 将 `./specs` 改为您偏好的文档目录路径
+> 2. 将"中文"改为您偏好的文档语言（如"英文"）
+
 ```
-# 你可以指定自定义目录：
-"用 spec workflow 在 ./src/features/auth 创建认证文档"
-"用 spec workflow 在 ./modules/payment 组织支付功能"
+# Spec Workflow 使用规范
 
-# 结果：文档将创建在你指定的位置
-./src/features/auth/
-├── requirements.md
-├── design.md
-├── tasks.md
-└── .workflow-confirmations.json
+## 1. 检查项目进度
+当用户提到继续之前的项目或不确定当前进度时，主动使用：
+specs-workflow 工具，action.type="check"，path="./specs"
+
+## 2. 文档语言
+所有 spec workflow 文档统一使用中文编写，包括需求、设计、任务文档中的所有内容。
+
+## 3. 文档目录
+所有 spec workflow 文档统一放置在 ./specs 目录下，保持项目文档的组织一致性。
+
+## 4. 任务管理
+完成当前任务后，使用：
+specs-workflow 工具，action.type="complete_task"，taskNumber="当前任务编号"
+这会自动返回下一个待完成的任务内容。
 ```
 
-## 安装
+### 💡 最佳实践
+
+1. **主动检查进度**：当用户说"继续上次的工作"时，先用 `check` 查看当前状态
+2. **保持语言一致**：整个项目文档使用同一种语言
+3. **灵活的目录结构**：根据项目规模选择单模块或多模块组织方式
+4. **任务粒度控制**：每个任务应该可以在 1-2 小时内完成
+
+## 安装指南
 
 <details>
-<summary>📦 安装说明</summary>
+<summary>📦 查看完整安装说明</summary>
 
 ### 系统要求
 
@@ -244,135 +263,32 @@ npm run build
 
 </details>
 
-## 示例工作流
-
-<details>
-<summary>📋 查看完整示例</summary>
-
-### 1. 从一个想法开始
-```
-你："我需要构建一个用户认证系统"
-```
-
-### 2. AI 创建需求
-```
-AI："我来帮你创建用户认证的 spec workflow。让我先从需求文档开始..."
-
-[创建包含用户故事、功能需求等的 requirements.md]
-
-AI："我已经创建了需求文档。请审查一下，如果需要修改请告诉我。"
-```
-
-### 3. 审查并确认
-```
-你："看起来不错，继续"
-```
-
-### 4. AI 创建设计
-```
-AI："现在我将基于这些需求创建技术设计..."
-
-[创建包含架构、API 设计、数据库模式等的 design.md]
-```
-
-### 5. AI 创建任务
-```
-AI："基于设计，这里是实现任务..."
-
-[创建带有编号任务列表的 tasks.md]
-```
-
-### 6. 开始开发
-```
-AI："让我们从任务 1 开始：设置认证数据库模式..."
-
-[按顺序实现每个任务]
-```
-
-</details>
-
-## 核心功能
-
-- 📝 **基于用户故事**：从用户故事开始，转化为技术需求
-- 🔄 **三阶段工作流**：需求 → 设计 → 任务，带进度追踪
-- ✅ **任务管理**：清晰的任务列表和完成状态追踪
-- 🎯 **顺序执行**：AI 按顺序完成任务，保持专注和上下文
-- 🔒 **审批关卡**：每个阶段都需要你的确认才能继续
-
-## 什么是 Spec Workflow MCP？
-
-Spec Workflow MCP 通过提供 AI 驱动的工作流，帮助开发团队维护高质量的项目文档，引导您创建全面的规格说明。
-
-### ❌ 没有 Spec Workflow MCP
-
-- 项目间文档不一致
-- 缺少关键需求细节
-- 设计决策无组织
-- 实现任务不清晰  
-- 手动跟踪文档完成度
-- **AI 在任务间随机跳跃，没有结构**
-- **需求与实际代码实现脱节**
-
-### ✅ 使用 Spec Workflow MCP
-
-- 标准化的需求、设计和任务文档模板
-- 基于最佳实践的 AI 引导文档生成
-- 自动进度跟踪和工作流管理
-- 智能验证文档完整性
-- 与 Claude 和其他 MCP 兼容工具无缝集成
-- **AI 系统地按顺序执行任务，完成一个再进行下一个**
-- **需求 → 设计 → 任务工作流确保代码与业务需求一致**
-
-## 工作流阶段
-
-1. **需求收集** → 2. **系统设计** → 3. **实施规划**
-
-每个阶段都有：
-- 结构化模板
-- 验证规则
-- AI 驱动的内容生成
-- 进度跟踪
 
 ## 开发
 
-### 从源码构建
-
 ```bash
-npm install
-npm run build
-```
+# 构建
+npm install && npm run build
 
-### 开发模式运行
-
-```bash
+# 开发模式
 npm run dev
-```
 
-### 运行测试
-
-```bash
+# 运行测试
 npm test
-```
 
-### 使用 MCP Inspector 调试
-
-```bash
+# 调试
 npm run inspector
 ```
 
-## 贡献
+## 链接
 
-欢迎贡献！请随时提交 Pull Request。
+- [GitHub 仓库](https://github.com/kingkongshot/specs-mcp)
+- [NPM 包](https://www.npmjs.com/package/spec-workflow-mcp)
+- [问题反馈](https://github.com/kingkongshot/specs-mcp/issues)
 
 ## 许可证
 
-MIT 许可证 - 详见 LICENSE 文件
-
-## 链接
-
-- [GitHub 仓库](https://github.com/kingkongshot/specs-workflow-mcp)
-- [NPM 包](https://www.npmjs.com/package/spec-workflow-mcp)
-- [MCP 文档](https://modelcontextprotocol.com)
+MIT License
 
 ---
 
