@@ -998,11 +998,11 @@ x-document-templates:
     title: "${featureName} - Task List"
     sections:
       - name: "Implementation Tasks"
-        placeholder: "## Implementation Tasks\n\n<template-tasks>\n- [ ] Task 1\n  - [ ] 1.1 Subtask\n  - [ ] 1.2 Subtask\n- [ ] Task 2\n</template-tasks>"
+        placeholder: "## Implementation Tasks\n\n<template-tasks>\n- [ ] 1. **Main Task 1**\n    - [ ] 1.1. Subtask description\n        - *Goal*: Describe what this task aims to achieve\n        - *Details*: Implementation details and considerations\n        - *Requirements*: Reference to requirement numbers\n    - [ ] 1.2. Subtask description\n        - *Goal*: Describe what this task aims to achieve\n        - *Details*: Implementation details and considerations\n        - *Requirements*: Reference to requirement numbers\n- [ ] 2. **Main Task 2**\n    - [ ] 2.1. Subtask description\n        - *Goal*: Describe what this task aims to achieve\n        - *Details*: Implementation details and considerations\n        - *Requirements*: Reference to requirement numbers\n</template-tasks>"
       - name: "Task Dependencies"
-        placeholder: "## Task Dependencies\n\n<template-tasks>\nList any dependencies between tasks.\n</template-tasks>"
+        placeholder: "## Task Dependencies\n\n<template-tasks>\n- Task 1 must be completed before Task 2\n- Tasks 2.1 and 2.2 can be executed in parallel\n- Task 3 depends on completion of Tasks 1 and 2\n</template-tasks>"
       - name: "Estimated Timeline"
-        placeholder: "## Estimated Timeline\n\n<template-tasks>\nProvide time estimates for major tasks.\n</template-tasks>"
+        placeholder: "## Estimated Timeline\n\n<template-tasks>\n- Task 1: 8 hours\n- Task 2: 12 hours\n- Task 3: 6 hours\n- **Total: 26 hours**\n</template-tasks>"
   
   skipped:
     title: "${featureName} - ${stageName}"
