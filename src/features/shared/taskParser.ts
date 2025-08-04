@@ -34,90 +34,142 @@ export function parseTasksFile(path: string): Task[] {
 }
 
 export function parseTasksFromContent(content: string): Task[] {
-  const tasks: Task[] = [];
   const lines = content.split('\n');
+  const allTasks: Task[] = [];
   
-  let currentTask: Task | null = null;
-  let currentSubtasks: Task[] = [];
-  let autoNumber = 1;
-  
+  // Phase 1: Collect all tasks with checkboxes
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     
-    // Skip empty lines
-    if (!line.trim()) continue;
-    
-    // Core pattern: find lines containing [ ] or [x]
+    // Find checkbox pattern
     const checkboxMatch = line.match(/\[([xX ])\]/);
     if (!checkboxMatch) continue;
     
-    // Extract checkbox status
+    // Extract task number (flexible matching)
+    const numberMatch = line.match(/(\d+(?:\.\d+)*)/);
+    if (!numberMatch) continue;
+    
+    const taskNumber = numberMatch[1];
     const isChecked = checkboxMatch[1].toLowerCase() === 'x';
     
-    // Find task number (optional)
-    const numberMatch = line.match(/(\d+(?:\.\d+)*)\s*[.:\-)]?/);
-    const taskNumber = numberMatch ? numberMatch[1] : String(autoNumber++);
-    
-    // Extract task description: all content after checkbox
-    const checkboxIndex = line.indexOf(checkboxMatch[0]);
-    const afterCheckbox = line.substring(checkboxIndex + checkboxMatch[0].length).trim();
-    
-    // If there's a number after checkbox, remove it
-    let description = afterCheckbox;
-    if (numberMatch && afterCheckbox.startsWith(numberMatch[0])) {
-      description = afterCheckbox.substring(numberMatch[0].length).trim();
-    }
+    // Extract description (remove task number and checkbox)
+    let description = line
+      .replace(/\[([xX ])\]/, '')  // Remove checkbox
+      .replace(/(\d+(?:\.\d+)*)\s*[.:\-)]?/, '') // Remove task number
+      .replace(/^[\s\-*]+/, '')  // Remove leading symbols
+      .trim();
     
     // If description is empty, try to get from next line
     if (!description && i + 1 < lines.length) {
       const nextLine = lines[i + 1].trim();
-      if (nextLine && !nextLine.match(/\[([xX ])\]/)) {
+      if (nextLine && !nextLine.match(/\[([xX ])\]/) && !nextLine.match(/^#/)) {
         description = nextLine;
         i++; // Skip next line
       }
     }
     
-    // If still no description, skip this task
     if (!description) continue;
     
-    // Check if this is a subtask
-    const isSubtask = taskNumber.includes('.');
-    
-    if (!isSubtask) {
-      // Save previous task
-      if (currentTask) {
-        if (currentSubtasks.length > 0) {
-          currentTask.subtasks = currentSubtasks;
-        }
-        tasks.push(currentTask);
+    allTasks.push({
+      number: taskNumber,
+      description: description,
+      checked: isChecked
+    });
+  }
+  
+  // Phase 2: Build hierarchy structure
+  const taskMap = new Map<string, Task>();
+  const rootTasks: Task[] = [];
+  
+  // Infer main tasks from task numbers
+  for (const task of allTasks) {
+    if (!task.number.includes('.')) {
+      // Top-level task
+      taskMap.set(task.number, task);
+      rootTasks.push(task);
+    }
+  }
+  
+  // Process subtasks
+  for (const task of allTasks) {
+    if (task.number.includes('.')) {
+      const parts = task.number.split('.');
+      const parentNumber = parts[0];
+      
+      // If main task doesn't exist, create virtual parent task
+      if (!taskMap.has(parentNumber)) {
+        // Try to find better title from document
+        const betterTitle = findMainTaskTitle(lines, parentNumber);
+        const virtualParent: Task = {
+          number: parentNumber,
+          description: betterTitle || `Task Group ${parentNumber}`,
+          checked: false,
+          subtasks: []
+        };
+        taskMap.set(parentNumber, virtualParent);
+        rootTasks.push(virtualParent);
       }
       
-      // Create new top-level task
-      currentTask = {
-        number: taskNumber,
-        description: description,
-        checked: isChecked
-      };
-      currentSubtasks = [];
-    } else if (currentTask) {
-      // Add subtask
-      currentSubtasks.push({
-        number: taskNumber,
-        description: description,
-        checked: isChecked
+      // Add subtask to main task
+      const parent = taskMap.get(parentNumber)!;
+      if (!parent.subtasks) {
+        parent.subtasks = [];
+      }
+      parent.subtasks.push(task);
+    }
+  }
+  
+  // Update main task completion status (only when all subtasks are completed)
+  for (const task of rootTasks) {
+    if (task.subtasks && task.subtasks.length > 0) {
+      task.checked = task.subtasks.every(st => st.checked);
+    }
+  }
+  
+  // Sort by task number
+  rootTasks.sort((a, b) => {
+    const numA = parseInt(a.number);
+    const numB = parseInt(b.number);
+    return numA - numB;
+  });
+  
+  // Sort subtasks
+  for (const task of rootTasks) {
+    if (task.subtasks) {
+      task.subtasks.sort((a, b) => {
+        const partsA = a.number.split('.').map(n => parseInt(n));
+        const partsB = b.number.split('.').map(n => parseInt(n));
+        for (let i = 0; i < Math.max(partsA.length, partsB.length); i++) {
+          const diff = (partsA[i] || 0) - (partsB[i] || 0);
+          if (diff !== 0) return diff;
+        }
+        return 0;
       });
     }
   }
   
-  // Save the last task
-  if (currentTask) {
-    if (currentSubtasks.length > 0) {
-      currentTask.subtasks = currentSubtasks;
+  return rootTasks;
+}
+
+// Find main task title (from headers or other places)
+function findMainTaskTitle(lines: string[], taskNumber: string): string | null {
+  // Look for lines like "### 1. Title" or "## 1. Title"
+  for (const line of lines) {
+    const headerMatch = line.match(/^#+\s*(\d+)\.\s*(.+)$/);
+    if (headerMatch && headerMatch[1] === taskNumber) {
+      return headerMatch[2].trim();
     }
-    tasks.push(currentTask);
   }
   
-  return tasks;
+  // Also support other formats like "1. **Title**"
+  for (const line of lines) {
+    const boldMatch = line.match(/^(\d+)\.\s*\*\*(.+?)\*\*$/);
+    if (boldMatch && boldMatch[1] === taskNumber) {
+      return boldMatch[2].trim();
+    }
+  }
+  
+  return null;
 }
 
 export function getFirstUncompletedTask(tasks: Task[]): Task | null {
