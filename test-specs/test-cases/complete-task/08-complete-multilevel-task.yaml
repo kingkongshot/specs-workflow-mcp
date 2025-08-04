@@ -1,0 +1,40 @@
+# 测试用例：完成多层级任务
+name: "完成多层级任务"
+description: "测试完成多层级任务时的解析和标记功能"
+category: "complete-task"
+priority: "high"
+
+setup:
+  fixtures: "fixtures/complete-task/edge-cases"
+  target: "./e2e-test-multilevel"
+
+request:
+  method: "tools/call"
+  params:
+    name: "specs-workflow"
+    arguments:
+      path: "./e2e-test-multilevel"
+      action:
+        type: "complete_task"
+        taskNumber: "5.1.1"
+
+expect:
+  operation: "complete_task"
+  additional_checks:
+    - type: "value_equals"
+      path: "structuredContent.taskCompleted"
+      value: "5.1.1"
+      description: "应该标记任务 5.1.1 为完成"
+    
+    - type: "file_content"
+      path: "./e2e-test-multilevel/tasks.md"
+      contains: "[x] 5.1.1 Second level sub-subtask"
+      description: "任务文件中应该标记 5.1.1 为完成"
+    
+    # 验证主任务信息
+    - type: "value_equals"
+      path: "structuredContent.nextTask.number"
+      value: "5"
+      description: "应该返回主任务 5 的信息"
+
+cleanup: ["./e2e-test-multilevel"]

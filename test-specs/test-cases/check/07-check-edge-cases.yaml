@@ -1,0 +1,36 @@
+# Test Case: Edge Cases Task Parsing
+name: "边缘情况任务解析测试"
+description: "测试任务解析器在多层级、重复编号、不规范标题等边缘情况下的健壮性"
+category: "check"
+priority: "high"
+
+setup:
+  fixtures: "fixtures/complete-task/edge-cases"
+  target: "./e2e-test-edge-cases"
+
+request:
+  method: "tools/call"
+  params:
+    name: "specs-workflow"
+    arguments:
+      path: "./e2e-test-edge-cases"
+      action:
+        type: "check"
+
+expect:
+  operation: "check"
+  additional_checks:
+    - type: "value_equals"
+      path: "structuredContent.stage"
+      value: "tasks"
+      description: "当前阶段应该是 tasks"
+    - type: "value_equals"
+      path: "structuredContent.progress.overall"
+      value: 60
+      description: "整体进度应该是 60%"
+    - type: "value_equals"
+      path: "structuredContent.status.type"
+      value: "ready_to_confirm"
+      description: "状态应该是准备确认"
+
+cleanup: ["./e2e-test-edge-cases"]

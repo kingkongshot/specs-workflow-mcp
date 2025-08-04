@@ -1,0 +1,41 @@
+# Test Case: Complete Orphan Subtask
+name: "完成孤立子任务"
+description: "测试完成没有主任务的孤立子任务时的处理逻辑"
+category: "complete-task"
+priority: "high"
+
+setup:
+  fixtures: "fixtures/complete-task/edge-cases"
+  target: "./e2e-test-orphan-subtask"
+
+request:
+  method: "tools/call"
+  params:
+    name: "specs-workflow"
+    arguments:
+      path: "./e2e-test-orphan-subtask"
+      action:
+        type: "complete_task"
+        taskNumber: "15.1"
+
+expect:
+  operation: "complete_task"
+  additional_checks:
+    - type: "value_equals"
+      path: "structuredContent.taskCompleted"
+      value: "15.1"
+      description: "任务号应该是 15.1"
+    - type: "value_equals"
+      path: "structuredContent.hasNextTask"
+      value: true
+      description: "应该有下一个任务"
+    - type: "file_content"
+      path: "./e2e-test-orphan-subtask/tasks.md"
+      contains: "[x] 15.1 Subtask without main task 15"
+      description: "孤立子任务应该被标记为完成"
+    - type: "value_equals"
+      path: "structuredContent.nextTask.number"
+      value: "15"
+      description: "下一个任务应该是虚拟创建的主任务 15"
+
+cleanup: ["./e2e-test-orphan-subtask"]

@@ -1,0 +1,37 @@
+# Test Case: Handle Duplicate Task Numbers
+name: "处理重复任务编号"
+description: "测试当存在重复任务编号时的处理逻辑"
+category: "complete-task"
+priority: "high"
+
+setup:
+  fixtures: "fixtures/complete-task/edge-cases"
+  target: "./e2e-test-duplicate-numbers"
+
+request:
+  method: "tools/call"
+  params:
+    name: "specs-workflow"
+    arguments:
+      path: "./e2e-test-duplicate-numbers"
+      action:
+        type: "complete_task"
+        taskNumber: "11.1"
+
+expect:
+  operation: "complete_task"
+  additional_checks:
+    - type: "value_equals"
+      path: "structuredContent.taskCompleted"
+      value: "11.1"
+      description: "任务号应该是 11.1"
+    - type: "value_equals"
+      path: "structuredContent.hasNextTask"
+      value: true
+      description: "应该有下一个任务"
+    - type: "file_content"
+      path: "./e2e-test-duplicate-numbers/tasks.md"
+      contains: "[x] 11.1 First occurrence of 11.1"
+      description: "应该标记第一个出现的 11.1 任务"
+
+cleanup: ["./e2e-test-duplicate-numbers"]
