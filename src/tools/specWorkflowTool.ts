@@ -28,7 +28,7 @@ export const specWorkflowTool = {
       'specs-workflow',
       {
         title: 'Intelligent Specification Workflow Tool',  // Added title property
-        description: 'Manage intelligent writing workflow for software project requirements, design, and task documents. Supports initialization, checking, skipping, and confirmation operations.',
+        description: 'Manage intelligent writing workflow for software project requirements, design, and task documents. Supports initialization, checking, skipping, confirmation, and task completion operations.',
         inputSchema,
         annotations: {
           progressReportingHint: true,
