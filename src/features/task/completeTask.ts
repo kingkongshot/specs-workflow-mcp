@@ -72,14 +72,25 @@ export async function completeTask(options: CompleteTaskOptions): Promise<Workfl
   const tasks = parseTasksFile(path);
   const nextTask = getFirstUncompletedTask(tasks);
   
-  // If there is a next task, get complete task content
+  // If completing a subtask, return complete information of the main task
+  let taskToDisplay = nextTask;
   let nextTaskFullContent = null;
   
-  if (nextTask) {
-    nextTaskFullContent = formatTaskForFullDisplay(nextTask, updatedContent);
+  if (taskNumber.includes('.')) {
+    // Get main task number
+    const mainTaskNumber = taskNumber.split('.')[0];
+    // Find main task
+    const mainTask = findTaskByNumber(tasks, mainTaskNumber);
+    if (mainTask) {
+      taskToDisplay = mainTask;
+    }
   }
   
-  return responseBuilder.buildCompleteTaskResponse(taskNumber, nextTask, nextTaskFullContent, null);
+  if (taskToDisplay) {
+    nextTaskFullContent = formatTaskForFullDisplay(taskToDisplay, updatedContent);
+  }
+  
+  return responseBuilder.buildCompleteTaskResponse(taskNumber, taskToDisplay, nextTaskFullContent, null);
 }
 
 /**
@@ -161,16 +172,9 @@ function markTaskAsCompleted(content: string, taskNumber: string): string | null
     
     // Check if line contains task number to mark
     for (const num of numbersToMark) {
-      // Use more precise pattern to match task number
-      // Support multiple formats: "1. - [ ]", "- [ ] 1.", "1.1. - [ ]", etc.
-      const patterns = [
-        new RegExp(`^\\s*${escapeRegExp(num)}\\.\\s*-\\s*\\[\\s*\\]`),
-        new RegExp(`^\\s*-\\s*\\[\\s*\\]\\s*${escapeRegExp(num)}\\.`),
-        new RegExp(`\\b${escapeRegExp(num)}\\b.*\\[\\s*\\]`)
-      ];
-      
-      const matched = patterns.some(pattern => pattern.test(line));
-      if (matched) {
+      // More robust matching strategy: as long as the line contains both task number and checkbox
+      // Don't care about their relative position and format details
+      if (containsTaskNumber(line, num)) {
         lines[i] = line.replace('[ ]', '[x]');
         found = true;
         break;
@@ -179,6 +183,22 @@ function markTaskAsCompleted(content: string, taskNumber: string): string | null
   }
   
   return found ? lines.join('\n') : null;
+}
+
+/**
+ * Check if line contains specified task number
+ * Use flexible matching strategy, ignore format details
+ */
+function containsTaskNumber(line: string, taskNumber: string): boolean {
+  // Remove checkbox part to avoid interference with matching
+  const lineWithoutCheckbox = line.replace(/\[[xX ]\]/g, '');
+  
+  // Use word boundary to ensure matching complete task number
+  // For example: won't mistakenly match "11.1" as "1.1"
+  const escapedNumber = escapeRegExp(taskNumber);
+  const regex = new RegExp(`\\b${escapedNumber}\\b`);
+  
+  return regex.test(lineWithoutCheckbox);
 }
 
 /**
