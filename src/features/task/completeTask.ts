@@ -57,7 +57,7 @@ export async function completeTask(options: CompleteTaskOptions): Promise<Workfl
   
   if (!updatedContent) {
     return {
-      displayText: `❌ Error: Task ${taskNumber} not found\n\nPlease check if the task number is correct.`,
+      displayText: responseBuilder.buildErrorResponse('taskNotFound', { taskNumber }),
       data: {
         success: false,
         error: `Task ${taskNumber} does not exist`
@@ -107,8 +107,17 @@ function checkTaskCanBeCompleted(content: string, taskNumber: string): {
   if (!targetTask) {
     return {
       canComplete: false,
-      errorMessage: `❌ Error: Task ${taskNumber} not found\n\nPlease check if the task number is correct.`,
+      errorMessage: responseBuilder.buildErrorResponse('taskNotFound', { taskNumber }),
       errorReason: 'Task does not exist'
+    };
+  }
+  
+  // Check if task is already completed
+  if (targetTask.checked) {
+    return {
+      canComplete: false,
+      errorMessage: responseBuilder.buildErrorResponse('taskAlreadyCompleted', { taskNumber }),
+      errorReason: 'Already completed'
     };
   }
   
