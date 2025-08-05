@@ -1,0 +1,46 @@
+# 测试用例：精确匹配任务号
+name: "精确匹配任务号"
+description: "验证任务号必须精确匹配，例如完成任务 1 不会影响 1.1、11、12 等"
+category: "complete-task"
+priority: "critical"
+
+setup:
+  fixtures: "fixtures/complete-task/tasks-stage"
+  target: "./e2e-test-complete-exact-match"
+
+request:
+  method: "tools/call"
+  params:
+    name: "specs-workflow"
+    arguments:
+      path: "./e2e-test-complete-exact-match"
+      action:
+        type: "complete_task"
+        taskNumber: "1"
+
+expect:
+  operation: "complete_task"
+  additional_checks:
+    - type: "value_equals"
+      path: "isError"
+      value: true
+      description: "应该返回错误（主任务有未完成的子任务）"
+    
+    # 验证错误信息
+    - type: "value_contains"
+      path: "content[0].text"
+      contains: "has uncompleted subtasks"
+      description: "错误信息应该提到有未完成的子任务"
+    
+    # 验证 1.1, 1.2, 1.3 等子任务未受影响
+    - type: "file_content"
+      path: "./e2e-test-complete-exact-match/tasks.md"
+      contains: "[ ] 1.1. 创建测试环境配置系统"
+      description: "任务 1.1 应该保持未完成状态"
+    
+    - type: "file_content"
+      path: "./e2e-test-complete-exact-match/tasks.md"
+      contains: "[ ] 1.2. 实现 MCP 连接管理器"
+      description: "任务 1.2 应该保持未完成状态"
+
+cleanup: ["./e2e-test-complete-exact-match"]

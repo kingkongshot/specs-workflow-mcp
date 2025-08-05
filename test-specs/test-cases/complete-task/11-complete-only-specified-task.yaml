@@ -1,0 +1,53 @@
+# 测试用例：只完成指定的任务，不影响其他任务
+name: "只完成指定的任务"
+description: "验证完成任务时只标记指定的任务号，不会错误地标记其他任务"
+category: "complete-task"
+priority: "critical"
+
+setup:
+  fixtures: "fixtures/complete-task/tasks-stage"
+  target: "./e2e-test-complete-only-specified"
+
+request:
+  method: "tools/call"
+  params:
+    name: "specs-workflow"
+    arguments:
+      path: "./e2e-test-complete-only-specified"
+      action:
+        type: "complete_task"
+        taskNumber: "3.2"
+
+expect:
+  operation: "complete_task"
+  additional_checks:
+    - type: "value_equals"
+      path: "structuredContent.taskCompleted"
+      value: "3.2"
+      description: "完成的任务应该是 3.2"
+    
+    # 验证 3.2 被标记为完成
+    - type: "file_content"
+      path: "./e2e-test-complete-only-specified/tasks.md"
+      contains: "[x] 3.2. check 操作测试套件"
+      description: "任务 3.2 应该被标记为完成"
+    
+    # 验证 3.1 仍然未完成
+    - type: "file_content"
+      path: "./e2e-test-complete-only-specified/tasks.md"
+      contains: "[ ] 3.1. init 操作测试套件"
+      description: "任务 3.1 应该保持未完成状态"
+    
+    # 验证 3.3 仍然未完成
+    - type: "file_content"
+      path: "./e2e-test-complete-only-specified/tasks.md"
+      contains: "[ ] 3.3. skip 操作测试套件"
+      description: "任务 3.3 应该保持未完成状态"
+    
+    # 验证其他章节的任务也未受影响
+    - type: "file_content"
+      path: "./e2e-test-complete-only-specified/tasks.md"
+      contains: "[ ] 1. **测试基础设施建设**"
+      description: "其他章节任务未受影响"
+
+cleanup: ["./e2e-test-complete-only-specified"]

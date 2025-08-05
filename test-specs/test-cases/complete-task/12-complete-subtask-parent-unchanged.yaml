@@ -1,0 +1,47 @@
+# 测试用例：完成子任务时父任务状态不变
+name: "完成子任务时父任务状态不变"
+description: "验证完成子任务（如 1.1）时，父任务（如 1）不会被错误地标记为完成"
+category: "complete-task"
+priority: "critical"
+
+setup:
+  fixtures: "fixtures/complete-task/tasks-stage"
+  target: "./e2e-test-complete-subtask-parent"
+
+request:
+  method: "tools/call"
+  params:
+    name: "specs-workflow"
+    arguments:
+      path: "./e2e-test-complete-subtask-parent"
+      action:
+        type: "complete_task"
+        taskNumber: "1.1"
+
+expect:
+  operation: "complete_task"
+  additional_checks:
+    - type: "value_equals"
+      path: "structuredContent.taskCompleted"
+      value: "1.1"
+      description: "完成的任务应该是 1.1"
+    
+    # 验证 1.1 被标记为完成
+    - type: "file_content"
+      path: "./e2e-test-complete-subtask-parent/tasks.md"
+      contains: "[x] 1.1. 创建测试环境配置系统"
+      description: "任务 1.1 应该被标记为完成"
+    
+    # 验证父任务 1 仍然未完成
+    - type: "file_content"
+      path: "./e2e-test-complete-subtask-parent/tasks.md"
+      contains: "[ ] 1. **测试基础设施建设**"
+      description: "父任务 1 应该保持未完成状态"
+    
+    # 验证其他子任务未受影响
+    - type: "file_content"
+      path: "./e2e-test-complete-subtask-parent/tasks.md"
+      contains: "[ ] 1.2. 实现 MCP 连接管理器"
+      description: "其他子任务 1.2 应该保持未完成状态"
+
+cleanup: ["./e2e-test-complete-subtask-parent"]

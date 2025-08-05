@@ -1,0 +1,34 @@
+# 测试用例：空任务列表场景
+name: "空任务列表完成任务"
+description: "验证当任务列表为空（所有任务已完成）时尝试完成任务的行为"
+category: "complete-task"
+priority: "high"
+
+setup:
+  fixtures: "fixtures/complete-task/all-done"
+  target: "./e2e-test-empty-task-list"
+
+request:
+  method: "tools/call"
+  params:
+    name: "specs-workflow"
+    arguments:
+      path: "./e2e-test-empty-task-list"
+      action:
+        type: "complete_task"
+        taskNumber: "1"
+
+expect:
+  operation: "complete_task"
+  additional_checks:
+    - type: "value_equals"
+      path: "isError"
+      value: true
+      description: "应该返回错误"
+    
+    - type: "value_contains"
+      path: "content[0].text"
+      contains: "not found"
+      description: "错误信息应该提到任务未找到（因为已完成的任务不在待完成列表中）"
+
+cleanup: ["./e2e-test-empty-task-list"]

@@ -18,6 +18,7 @@ coverage/
 # test-specs/ - 在 dev 分支中保留测试套件
 test-specs/reports/
 test-specs/node_modules/
+test-specs/temp/
 
 # Documentation
 docs/
