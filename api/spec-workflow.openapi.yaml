@@ -713,6 +713,19 @@ x-error-responses:
       If you want to skip writing this document:
       - Use action.type="skip" to bypass this stage
       - Note: Skipping important documents may impact project quality
+  
+  taskAlreadyCompleted:
+    displayText: |
+      ℹ️ Task ${taskNumber} is already completed
+      
+      This task has already been marked as completed.
+      No action needed.
+  
+  taskNotFound:
+    displayText: |
+      ❌ Error: Task ${taskNumber} not found
+      
+      Please check if the task number is correct.
 
 
 # Shared resource definitions

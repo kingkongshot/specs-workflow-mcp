@@ -28,7 +28,7 @@ expect:
     
     - type: "value_contains"
       path: "content[0].text"
-      contains: "not found"
-      description: "错误信息应该提到任务未找到（因为已完成的任务不在待完成列表中）"
+      contains: "already completed"
+      description: "错误信息应该提到任务已经完成"
 
 cleanup: ["./e2e-test-empty-task-list"]

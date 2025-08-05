@@ -451,6 +451,22 @@
           "Error"
         ]
       }
+    },
+    "taskAlreadyCompleted": {
+      "displayText": "ℹ️ Task ${taskNumber} is already completed\n\nThis task has already been marked as completed.\nNo action needed.\n",
+      "validation": {
+        "isError": true,
+        "contentContains": []
+      }
+    },
+    "taskNotFound": {
+      "displayText": "❌ Error: Task ${taskNumber} not found\n\nPlease check if the task number is correct.\n",
+      "validation": {
+        "isError": true,
+        "contentContains": [
+          "Error"
+        ]
+      }
     }
   }
 }
