@@ -683,17 +683,17 @@ components:
             description: "Implement error handling"
           hasNextTask: true
           displayText: |
-            ✅ 批量任务处理成功
+            ✅ Batch task processing succeeded
             
-            新完成的任务：
+            Newly completed tasks:
             - 1.1
             - 1.2
             - 2.1
             
-            已经完成的任务：
-            - 1.3 (已完成)
+            Already completed tasks:
+            - 1.3 (already completed)
             
-            下一个任务：2.2. Implement error handling
+            Next task: 2.2. Implement error handling
         - success: false
           completedTasks: []
           alreadyCompleted: []
@@ -706,13 +706,13 @@ components:
           nextTask: null
           hasNextTask: false
           displayText: |
-            ❌ 批量完成任务失败
+            ❌ Batch task completion failed
             
-            以下任务无法完成：
+            The following tasks cannot be completed:
             - 2.1: Has uncompleted subtasks
             - 99: Task does not exist
             
-            请先解决这些问题后再重试。
+            Please resolve these issues and try again.
 
     # Common type definitions
     Stage:
