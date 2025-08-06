@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MCP](https://img.shields.io/badge/MCP-Compatible-blue)](https://modelcontextprotocol.com)
 
-[English](https://github.com/kingkongshot/specs-workflow-mcp/blob/main/README.md) | [简体中文](https://github.com/kingkongshot/specs-workflow-mcp/blob/main/README-zh.md)
+[English](README.md) | [简体中文](README-zh.md)
 
 Guide AI to systematically complete software development through a structured **Requirements → Design → Tasks** workflow, ensuring code implementation stays aligned with business needs.
 
@@ -21,6 +21,21 @@ Guide AI to systematically complete software development through a structured **
 - Complete traceability from user stories to code implementation
 - Standardized document templates with automatic progress management
 - Each stage requires confirmation, ensuring correct direction
+- **Persistent progress**: Continue from where you left off with `check`, even in new conversations
+
+## Recent Updates
+
+> **v1.0.6**
+> - ✨ Batch task completion: Complete multiple tasks at once for faster progress on large projects
+> 
+> **v1.0.5** 
+> - 🐛 Edge case fixes: Distinguish between "task not found" and "task already completed" to prevent workflow interruption
+> 
+> **v1.0.4**
+> - ✅ Task management: Added task completion tracking for systematic project progression
+> 
+> **v1.0.3**
+> - 🎉 Initial release: Core workflow framework for Requirements → Design → Tasks
 
 ## Quick Start
 
@@ -87,7 +102,13 @@ You can specify any directory: `"Use spec workflow to create auth docs in ./src/
 
 ### 🤖 Make AI Use This Tool Better
 
-Add the following prompt to your AI assistant configuration to enable smarter use of Spec Workflow.
+**Strongly recommended** to add the following prompt to your AI assistant configuration. Without it, AI may:
+- ❌ Not know when to invoke Spec Workflow
+- ❌ Forget to manage task progress, causing disorganized work
+- ❌ Not utilize Spec Workflow for systematic documentation
+- ❌ Unable to continuously track project status
+
+With this configuration, AI will intelligently use Spec Workflow to manage the entire development process.
 
 > **Configuration Note**: Please modify the following based on your needs:
 > 1. Change `./specs` to your preferred documentation directory path
@@ -107,17 +128,16 @@ All spec workflow documents should be written in English consistently, including
 All spec workflow documents should be placed in ./specs directory to maintain consistent project documentation organization.
 
 ## 4. Task Management
-After completing current task, use:
+Always use the following to manage task progress:
 specs-workflow tool with action.type="complete_task" and taskNumber="current task number"
-This will automatically return the next pending task content.
+Follow the workflow guidance to continue working until all tasks are completed.
+
+## 5. Best Practices
+- Proactive progress check: When user says "continue from last time", first use check to see current status
+- Language consistency: Use the same language throughout all project documents
+- Flexible structure: Choose single-module or multi-module organization based on project scale
+- Task granularity: Each task should be completable within 1-2 hours
 ```
-
-### 💡 Best Practices
-
-1. **Proactive Progress Check**: When user says "continue from last time", first use `check` to see current status
-2. **Language Consistency**: Use the same language throughout all project documents
-3. **Flexible Structure**: Choose single-module or multi-module organization based on project scale
-4. **Task Granularity**: Each task should be completable within 1-2 hours
 
 ## Installation
 
@@ -263,22 +283,6 @@ Then add to Claude Desktop configuration:
 
 </details>
 
-
-## Development
-
-```bash
-# Build
-npm install && npm run build
-
-# Development mode
-npm run dev
-
-# Run tests
-npm test
-
-# Debug
-npm run inspector
-```
 
 ## Links
 
