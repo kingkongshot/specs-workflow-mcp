@@ -8,11 +8,20 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { specWorkflowTool } from './tools/specWorkflowTool.js';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const packageJson = JSON.parse(
+  readFileSync(join(__dirname, '..', 'package.json'), 'utf-8')
+);
 
 // Create server instance
 const server = new McpServer({
   name: 'specs-workflow-mcp',
-  version: '3.0.0'
+  version: packageJson.version
 });
 
 // Register tools
@@ -27,7 +36,7 @@ async function main(): Promise<void> {
     // eslint-disable-next-line no-console
     console.error('✨ MCP specification workflow server started');
     // eslint-disable-next-line no-console
-    console.error('📍 Version: 3.0.0 (Fully compliant with MCP best practices)');
+    console.error(`📍 Version: ${packageJson.version} (Fully compliant with MCP best practices)`);
     
   } catch (error) {
     // eslint-disable-next-line no-console

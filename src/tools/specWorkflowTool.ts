@@ -15,7 +15,10 @@ const inputSchema = {
     type: z.enum(['init', 'check', 'skip', 'confirm', 'complete_task']).describe('Operation type'),
     featureName: z.string().optional().describe('Feature name (required for init)'),
     introduction: z.string().optional().describe('Feature introduction (required for init)'),
-    taskNumber: z.string().optional().describe('Task number to mark as completed (required for complete_task)')
+    taskNumber: z.union([
+      z.string(),
+      z.array(z.string())
+    ]).optional().describe('Task number(s) to mark as completed (required for complete_task). Can be a single string or an array of strings')
   }).optional().describe('Operation parameters')
 };
 
@@ -28,7 +31,7 @@ export const specWorkflowTool = {
       'specs-workflow',
       {
         title: 'Intelligent Specification Workflow Tool',  // Added title property
-        description: 'Manage intelligent writing workflow for software project requirements, design, and task documents. Supports initialization, checking, skipping, confirmation, and task completion operations.',
+        description: 'Manage intelligent writing workflow for software project requirements, design, and task documents. Supports initialization, checking, skipping, confirmation, and task completion operations (single or batch).',
         inputSchema,
         annotations: {
           progressReportingHint: true,
