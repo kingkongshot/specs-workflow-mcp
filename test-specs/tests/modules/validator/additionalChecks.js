@@ -23,7 +23,9 @@ export async function performAdditionalCheck(check, data) {
     'file_content': checkFileContent,
     'value_equals': checkValueEquals,
     'value_in_range': checkValueInRange,
-    'value_contains': checkValueContains
+    'value_contains': checkValueContains,
+    'array_equals': checkArrayEquals,
+    'array_contains': checkArrayContains
   };
   
   const checkFunction = checkFunctions[check.type];
@@ -276,5 +278,97 @@ function checkValueContains(check, data) {
       error: `值不包含: ${check.path} = ${value} (期望包含: ${expectedContent})`
     };
   }
+}
+
+/**
+ * 检查数组是否完全相等
+ * @param {Object} check - 检查配置
+ * @param {Object} data - 数据对象
+ * @returns {Object} 检查结果
+ */
+function checkArrayEquals(check, data) {
+  const actualArray = getValueByPath(data, check.path);
+  const expectedArray = check.values || check.value;
+  
+  // 检查期望值是否存在
+  if (!expectedArray) {
+    return {
+      passed: false,
+      error: `测试配置错误: array_equals 检查缺少 values 字段`
+    };
+  }
+  
+  // 检查实际值是否为数组
+  if (!Array.isArray(actualArray)) {
+    return {
+      passed: false,
+      error: `值不是数组: ${check.path} = ${JSON.stringify(actualArray)}`
+    };
+  }
+  
+  // 检查数组长度
+  if (actualArray.length !== expectedArray.length) {
+    return {
+      passed: false,
+      error: `数组长度不匹配: ${check.path} 包含 ${actualArray.length} 个元素 (期望: ${expectedArray.length} 个)`
+    };
+  }
+  
+  // 检查数组内容（顺序相关）
+  const sortedActual = [...actualArray].sort();
+  const sortedExpected = [...expectedArray].sort();
+  
+  for (let i = 0; i < sortedExpected.length; i++) {
+    if (sortedActual[i] !== sortedExpected[i]) {
+      return {
+        passed: false,
+        error: `数组内容不匹配: ${check.path} = [${actualArray.join(', ')}] (期望: [${expectedArray.join(', ')}])`
+      };
+    }
+  }
+  
+  return { passed: true };
+}
+
+/**
+ * 检查数组是否包含特定元素
+ * @param {Object} check - 检查配置
+ * @param {Object} data - 数据对象
+ * @returns {Object} 检查结果
+ */
+function checkArrayContains(check, data) {
+  const actualArray = getValueByPath(data, check.path);
+  const expectedValues = check.values || check.value;
+  
+  // 检查期望值是否存在
+  if (!expectedValues) {
+    return {
+      passed: false,
+      error: `测试配置错误: array_contains 检查缺少 values 字段`
+    };
+  }
+  
+  // 确保期望值是数组
+  const valuesToCheck = Array.isArray(expectedValues) ? expectedValues : [expectedValues];
+  
+  // 检查实际值是否为数组
+  if (!Array.isArray(actualArray)) {
+    return {
+      passed: false,
+      error: `值不是数组: ${check.path} = ${JSON.stringify(actualArray)}`
+    };
+  }
+  
+  // 检查每个期望值是否存在于实际数组中
+  const missingValues = valuesToCheck.filter(v => !actualArray.includes(v));
+  
+  if (missingValues.length > 0) {
+    return {
+      passed: false,
+      error: `数组缺少元素: ${check.path} = [${actualArray.join(', ')}] (缺少: [${missingValues.join(', ')}])`
+    };
+  }
+  
+  return { passed: true };
 }
 

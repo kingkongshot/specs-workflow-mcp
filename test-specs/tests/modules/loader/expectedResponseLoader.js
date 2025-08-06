@@ -178,9 +178,16 @@ export function validateExpectedResponses(expectedResponses, requiredOperations)
     if (!expectedResponses[operation]) {
       errors.push(`缺少操作的预期响应定义: ${operation}`);
     } else {
-      // 检查是否有 success 响应
-      if (!expectedResponses[operation].success) {
-        warnings.push(`操作 ${operation} 缺少 success 响应定义`);
+      // 检查是否有响应定义
+      // complete_task 需要 single 或 batch，其他操作需要 success
+      if (operation === 'complete_task') {
+        if (!expectedResponses[operation].single && !expectedResponses[operation].batch) {
+          warnings.push(`操作 ${operation} 缺少响应定义（需要 single 或 batch）`);
+        }
+      } else {
+        if (!expectedResponses[operation].success) {
+          warnings.push(`操作 ${operation} 缺少 success 响应定义`);
+        }
       }
     }
   }

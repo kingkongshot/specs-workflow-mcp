@@ -17,7 +17,7 @@ export interface WorkflowArgs {
     type: string;
     featureName?: string;
     introduction?: string;
-    taskNumber?: string;
+    taskNumber?: string | string[];
   };
 }
 

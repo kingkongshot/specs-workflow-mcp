@@ -1,6 +1,6 @@
-# 测试用例：全面污染检测（修正版）
-name: "全面污染检测-修正版"
-description: "使用支持的检查类型验证完成任务时不会污染其他任务"
+# 测试用例：批量完成全面污染检测
+name: "批量完成全面污染检测"
+description: "验证批量完成多个任务时不会污染其他未指定的任务"
 category: "complete-task"
 priority: "critical"
 
@@ -16,83 +16,128 @@ request:
       path: "./e2e-test-comprehensive-fixed"
       action:
         type: "complete_task"
-        taskNumber: "3.3"  # 完成一个中间位置的任务
+        taskNumber: ["1.3", "3.3", "5.1", "6.1"]  # 跨多个阶段的批量完成
 
 expect:
   operation: "complete_task"
   additional_checks:
     - type: "value_equals"
-      path: "structuredContent.taskCompleted"
-      value: "3.3"
-      description: "完成的任务应该是 3.3"
+      path: "structuredContent.success"
+      value: true
+      description: "批量操作应该成功"
+    
+    - type: "array_equals"
+      path: "structuredContent.completedTasks"
+      values: ["1.3", "3.3", "5.1", "6.1"]
+      description: "实际完成的任务应该是 1.3, 3.3, 5.1 和 6.1"
     
     # 验证目标任务被完成
+    - type: "file_content"
+      path: "./e2e-test-comprehensive-fixed/tasks.md"
+      contains: "[x] 1.3. 搭建测试数据管理系统"
+      description: "任务 1.3 应该被标记为完成"
+    
     - type: "file_content"
       path: "./e2e-test-comprehensive-fixed/tasks.md"
       contains: "[x] 3.3. skip 操作测试套件"
       description: "任务 3.3 应该被标记为完成"
     
-    # 系统性验证：检查每个阶段的代表性任务
-    # 策略：每个阶段检查首尾和中间的任务，确保无污染
+    - type: "file_content"
+      path: "./e2e-test-comprehensive-fixed/tasks.md"
+      contains: "[x] 5.1. 并行测试执行"
+      description: "任务 5.1 应该被标记为完成"
     
-    # 第一阶段验证（任务 1-2）
+    - type: "file_content"
+      path: "./e2e-test-comprehensive-fixed/tasks.md"
+      contains: "[x] 6.1. 详细测试报告生成"
+      description: "任务 6.1 应该被标记为完成"
+    
+    # 系统性验证：检查每个阶段的其他任务未受影响
+    
+    # 第一阶段验证（任务 1）
     - type: "file_content"
       path: "./e2e-test-comprehensive-fixed/tasks.md"
       contains: "[ ] 1. **测试基础设施建设**"
-      description: "第一阶段首个任务未受影响"
+      description: "主任务 1 未被自动完成（还有 1.1, 1.2 未完成）"
+    - type: "file_content"
+      path: "./e2e-test-comprehensive-fixed/tasks.md"
+      contains: "[ ] 1.1. 创建测试环境配置系统"
+      description: "任务 1.1 未受影响"
     - type: "file_content"
       path: "./e2e-test-comprehensive-fixed/tasks.md"
       contains: "[ ] 1.2. 实现 MCP 连接管理器"
-      description: "第一阶段中间任务未受影响"
+      description: "任务 1.2 未受影响"
+    
+    # 第二阶段验证（任务 2）
+    - type: "file_content"
+      path: "./e2e-test-comprehensive-fixed/tasks.md"
+      contains: "[ ] 2.1. 实现基础装置生成功能"
+      description: "任务 2.1 未受影响"
     - type: "file_content"
       path: "./e2e-test-comprehensive-fixed/tasks.md"
       contains: "[ ] 2.2. 添加状态变化模拟"
-      description: "第一阶段末尾任务未受影响"
+      description: "任务 2.2 未受影响"
     
-    # 第二阶段验证（任务 3）- 包含目标任务
-    - type: "file_content"
-      path: "./e2e-test-comprehensive-fixed/tasks.md"
-      contains: "[ ] 3.1. init 操作测试套件"
-      description: "同任务组的 3.1 未受影响"
-    - type: "file_content"
-      path: "./e2e-test-comprehensive-fixed/tasks.md"
-      contains: "[ ] 3.2. check 操作测试套件"
-      description: "同任务组的 3.2 未受影响"
-    - type: "file_content"
-      path: "./e2e-test-comprehensive-fixed/tasks.md"
-      contains: "[ ] 3.4. confirm 操作测试套件"
-      description: "同任务组的 3.4 未受影响"
-    - type: "file_content"
-      path: "./e2e-test-comprehensive-fixed/tasks.md"
-      contains: "[ ] 3.5. complete_task 操作测试套件"
-      description: "同任务组的 3.5 未受影响"
-    
-    # 第三阶段验证（任务 4-6）
-    - type: "file_content"
-      path: "./e2e-test-comprehensive-fixed/tasks.md"
-      contains: "[ ] 4.1. 完整工作流测试"
-      description: "第三阶段首个任务未受影响"
-    - type: "file_content"
-      path: "./e2e-test-comprehensive-fixed/tasks.md"
-      contains: "[ ] 5.2. 测试重试机制"
-      description: "第三阶段中间任务未受影响"
-    - type: "file_content"
-      path: "./e2e-test-comprehensive-fixed/tasks.md"
-      contains: "[ ] 6.2. Web 报告界面"
-      description: "第三阶段末尾任务未受影响"
-    
-    # 验证包含数字 3 的其他任务没有被误改（边界测试）
+    # 第三阶段验证（任务 3）- 包含目标任务 3.3
     - type: "file_content"
       path: "./e2e-test-comprehensive-fixed/tasks.md"
       contains: "[ ] 3. **操作测试用例实现**"
-      description: "任务 3 未被影响"
+      description: "主任务 3 未被自动完成（还有其他子任务未完成）"
     - type: "file_content"
       path: "./e2e-test-comprehensive-fixed/tasks.md"
-      contains: "[ ] 1.3. 搭建测试数据管理系统"
-      description: "任务 1.3 未被影响"
+      contains: "[ ] 3.1. init 操作测试套件"
+      description: "任务 3.1 未受影响"
     - type: "file_content"
       path: "./e2e-test-comprehensive-fixed/tasks.md"
-      contains: "[ ] 6.1. 详细测试报告生成"
-      description: "任务 6.3 未被影响"
+      contains: "[ ] 3.2. check 操作测试套件"
+      description: "任务 3.2 未受影响"
+    - type: "file_content"
+      path: "./e2e-test-comprehensive-fixed/tasks.md"
+      contains: "[ ] 3.4. confirm 操作测试套件"
+      description: "任务 3.4 未受影响"
+    - type: "file_content"
+      path: "./e2e-test-comprehensive-fixed/tasks.md"
+      contains: "[ ] 3.5. complete_task 操作测试套件"
+      description: "任务 3.5 未受影响"
+    
+    # 第四阶段验证（任务 4）
+    - type: "file_content"
+      path: "./e2e-test-comprehensive-fixed/tasks.md"
+      contains: "[ ] 4.1. 完整工作流测试"
+      description: "任务 4.1 未受影响"
+    - type: "file_content"
+      path: "./e2e-test-comprehensive-fixed/tasks.md"
+      contains: "[ ] 4.2. 异常恢复测试"
+      description: "任务 4.2 未受影响"
+    
+    # 第五阶段验证（任务 5）- 包含目标任务 5.1
+    - type: "file_content"
+      path: "./e2e-test-comprehensive-fixed/tasks.md"
+      contains: "[ ] 5. **测试运行器增强**"
+      description: "主任务 5 未被自动完成（还有 5.2 未完成）"
+    - type: "file_content"
+      path: "./e2e-test-comprehensive-fixed/tasks.md"
+      contains: "[ ] 5.2. 测试重试机制"
+      description: "任务 5.2 未受影响"
+    
+    # 第六阶段验证（任务 6）- 包含目标任务 6.1
+    - type: "file_content"
+      path: "./e2e-test-comprehensive-fixed/tasks.md"
+      contains: "[ ] 6. **测试报告与分析**"
+      description: "主任务 6 未被自动完成（还有 6.2 未完成）"
+    - type: "file_content"
+      path: "./e2e-test-comprehensive-fixed/tasks.md"
+      contains: "[ ] 6.2. Web 报告界面"
+      description: "任务 6.2 未受影响"
+    
+    # 验证相似编号的任务没有被误改（边界测试）
+    - type: "file_content"
+      path: "./e2e-test-comprehensive-fixed/tasks.md"
+      contains: "[ ] 2.1. 实现基础装置生成功能"
+      description: "2.1 不应被 5.1 或 6.1 影响"
+    - type: "file_content"
+      path: "./e2e-test-comprehensive-fixed/tasks.md"
+      contains: "[ ] 4.1. 完整工作流测试"
+      description: "4.1 不应被 5.1 或 6.1 影响"
 
 cleanup: ["./e2e-test-comprehensive-fixed"]

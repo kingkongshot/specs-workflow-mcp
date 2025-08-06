@@ -106,14 +106,26 @@ class OpenAPIResponseExtractor {
    */
   extractCompleteTaskResponses() {
     const completeTaskResponse = this.findResponseByExample('CompleteTaskResponse');
-    if (!completeTaskResponse) return null;
-
-    return {
-      success: {
+    const batchCompleteTaskResponse = this.findResponseByExample('BatchCompleteTaskResponse');
+    
+    // 支持单个任务和批量任务两种响应格式
+    const responses = {};
+    
+    if (completeTaskResponse) {
+      responses.single = {
         schema: this.convertToJsonSchema(completeTaskResponse),
         validation: 'json_schema'
-      }
-    };
+      };
+    }
+    
+    if (batchCompleteTaskResponse) {
+      responses.batch = {
+        schema: this.convertToJsonSchema(batchCompleteTaskResponse),
+        validation: 'json_schema'
+      };
+    }
+    
+    return Object.keys(responses).length > 0 ? responses : null;
   }
 
   /**

@@ -1,0 +1,58 @@
+# 测试用例：批量完成多个任务
+name: "批量完成多个任务"
+description: "测试同时完成多个任务的批量处理功能"
+category: "complete-task"
+priority: "high"
+
+setup:
+  fixtures: "fixtures/complete-task/tasks-stage"
+  target: "./e2e-test-complete-batch"
+
+request:
+  method: "tools/call"
+  params:
+    name: "specs-workflow"
+    arguments:
+      path: "./e2e-test-complete-batch"
+      action:
+        type: "complete_task"
+        taskNumber: ["1.1", "1.2", "1.3"]
+
+expect:
+  operation: "complete_task"
+  # 批量完成应该返回成功
+  additional_checks:
+    - type: "value_equals"
+      path: "structuredContent.success"
+      value: true
+      description: "批量操作应该成功"
+    - type: "array_equals"
+      path: "structuredContent.completedTasks"
+      values: ["1.1", "1.2", "1.3"]
+      description: "实际完成的任务应该是 1.1, 1.2, 1.3"
+    - type: "value_equals"
+      path: "structuredContent.hasNextTask"
+      value: true
+      description: "应该有下一个任务"
+    - type: "value_equals"
+      path: "structuredContent.nextTask.number"
+      value: "2"
+      description: "下一个任务应该是任务 2"
+    - type: "file_content"
+      path: "./e2e-test-complete-batch/tasks.md"
+      contains: "[x] 1.1. 创建测试环境配置系统"
+      description: "任务 1.1 应该被标记为完成"
+    - type: "file_content"
+      path: "./e2e-test-complete-batch/tasks.md"
+      contains: "[x] 1.2. 实现 MCP 连接管理器"
+      description: "任务 1.2 应该被标记为完成"
+    - type: "file_content"
+      path: "./e2e-test-complete-batch/tasks.md"
+      contains: "[x] 1.3. 搭建测试数据管理系统"
+      description: "任务 1.3 应该被标记为完成"
+    - type: "file_content"
+      path: "./e2e-test-complete-batch/tasks.md"
+      contains: "[x] 1. **测试基础设施建设**"
+      description: "当所有子任务完成后，父任务 1 应该自动被标记为完成"
+
+cleanup: ["./e2e-test-complete-batch"]

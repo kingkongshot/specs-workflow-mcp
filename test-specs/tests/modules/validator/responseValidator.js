@@ -35,7 +35,8 @@ export async function validateResponse(testCase, actualResponse, expectedRespons
     response,
     operation,
     expectedResponses,
-    additional_checks
+    additional_checks,
+    testCase  // 传递完整的测试用例以便判断响应类型
   );
 }
 
@@ -125,15 +126,35 @@ async function handleUnexpectedError(response, additionalChecks) {
  * @param {string} operation - 操作名称
  * @param {Object} expectedResponses - 预期响应定义集合
  * @param {Array} additionalChecks - 额外检查项
+ * @param {Object} testCase - 完整的测试用例（用于判断响应类型）
  * @returns {Promise<Object>} 验证结果
  */
-async function validateSuccessResponse(response, operation, expectedResponses, additionalChecks) {
-  const expected = expectedResponses[operation]?.success;
+async function validateSuccessResponse(response, operation, expectedResponses, additionalChecks, testCase) {
+  let expected;
+  
+  // 对于 complete_task 操作，根据请求参数自动推断响应类型
+  if (operation === 'complete_task' && testCase?.request?.params?.arguments?.action) {
+    const taskNumber = testCase.request.params.arguments.action.taskNumber;
+    
+    // 如果 taskNumber 是数组，使用批量响应 schema
+    if (Array.isArray(taskNumber)) {
+      expected = expectedResponses[operation]?.batch;
+    } else {
+      // 如果 taskNumber 是字符串，使用单个响应 schema
+      expected = expectedResponses[operation]?.single;
+    }
+  } else {
+    // 其他操作使用 success 响应（保持向后兼容）
+    expected = expectedResponses[operation]?.success;
+  }
   
   if (!expected) {
+    const responseType = operation === 'complete_task' ? 
+      (Array.isArray(testCase?.request?.params?.arguments?.action?.taskNumber) ? 'batch' : 'single') : 
+      'success';
     return {
       passed: false,
-      errors: [`未找到 ${operation}.success 的预期响应定义`],
+      errors: [`未找到 ${operation}.${responseType} 的预期响应定义`],
       actualResponse: response,
       expectedResponse: null,
       schemaValidation: null

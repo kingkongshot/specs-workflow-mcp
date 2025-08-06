@@ -55,8 +55,14 @@ components:
           type: string
           description: Feature introduction (required for init)
         taskNumber:
-          type: string
-          description: Task number to mark as completed (required for complete_task)
+          oneOf:
+            - type: string
+              description: Single task number to mark as completed
+            - type: array
+              items:
+                type: string
+              description: Multiple task numbers for batch completion
+          description: Task number(s) to mark as completed (required for complete_task)
       
     # Response definitions
     WorkflowResponse:
@@ -70,6 +76,7 @@ components:
             - $ref: '#/components/schemas/SkipResponse'
             - $ref: '#/components/schemas/ConfirmResponse'
             - $ref: '#/components/schemas/CompleteTaskResponse'
+            - $ref: '#/components/schemas/BatchCompleteTaskResponse'
     
     # Initialization response
     InitResponse:
@@ -592,6 +599,120 @@ components:
             🎉 Congratulations! All tasks completed!
             
             You have successfully completed all implementation tasks. Project implementation phase completed.
+    
+    # Batch complete tasks response
+    BatchCompleteTaskResponse:
+      type: object
+      required: [success, displayText]
+      properties:
+        success:
+          type: boolean
+          description: Whether the batch operation succeeded
+        completedTasks:
+          type: array
+          items:
+            type: string
+          description: Task numbers that were actually completed in this operation
+        alreadyCompleted:
+          type: array
+          items:
+            type: string
+          description: Task numbers that were already completed before this operation
+        failedTasks:
+          type: array
+          items:
+            type: object
+            required: [taskNumber, reason]
+            properties:
+              taskNumber:
+                type: string
+                description: The task number that failed
+              reason:
+                type: string
+                description: The reason why the task could not be completed
+          description: Tasks that could not be completed with reasons
+        results:
+          type: array
+          items:
+            type: object
+            required: [taskNumber, success]
+            properties:
+              taskNumber:
+                type: string
+              success:
+                type: boolean
+              status:
+                type: string
+                enum: [completed, already_completed, failed]
+          description: Detailed results for each task in the batch
+        nextTask:
+          type: object
+          nullable: true
+          properties:
+            number:
+              type: string
+            description:
+              type: string
+          description: Information about the next uncompleted task
+        hasNextTask:
+          type: boolean
+          description: Whether there are more tasks to complete
+        displayText:
+          type: string
+          description: Human-readable message about the batch operation
+      examples:
+        - success: true
+          completedTasks: ["1.1", "1.2", "2.1"]
+          alreadyCompleted: ["1.3"]
+          failedTasks: []
+          results:
+            - taskNumber: "1.1"
+              success: true
+              status: completed
+            - taskNumber: "1.2"
+              success: true
+              status: completed
+            - taskNumber: "1.3"
+              success: true
+              status: already_completed
+            - taskNumber: "2.1"
+              success: true
+              status: completed
+          nextTask:
+            number: "2.2"
+            description: "Implement error handling"
+          hasNextTask: true
+          displayText: |
+            ✅ 批量任务处理成功
+            
+            新完成的任务：
+            - 1.1
+            - 1.2
+            - 2.1
+            
+            已经完成的任务：
+            - 1.3 (已完成)
+            
+            下一个任务：2.2. Implement error handling
+        - success: false
+          completedTasks: []
+          alreadyCompleted: []
+          failedTasks:
+            - taskNumber: "2.1"
+              reason: "Has uncompleted subtasks"
+            - taskNumber: "99"
+              reason: "Task does not exist"
+          results: []
+          nextTask: null
+          hasNextTask: false
+          displayText: |
+            ❌ 批量完成任务失败
+            
+            以下任务无法完成：
+            - 2.1: Has uncompleted subtasks
+            - 99: Task does not exist
+            
+            请先解决这些问题后再重试。
 
     # Common type definitions
     Stage:

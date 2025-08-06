@@ -23,12 +23,22 @@ expect:
   additional_checks:
     - type: "value_equals"
       path: "isError"
-      value: true
-      description: "应该返回错误"
+      value: false
+      description: "应该返回成功（幂等性）"
     
     - type: "value_contains"
       path: "content[0].text"
       contains: "already completed"
-      description: "错误信息应该提到任务已经完成"
+      description: "信息应该提到任务已经完成"
+    
+    - type: "value_equals"
+      path: "structuredContent.taskCompleted"
+      value: "1"
+      description: "应该返回已完成的任务编号"
+    
+    - type: "value_equals"
+      path: "structuredContent.hasNextTask"
+      value: false
+      description: "不应该有下一个任务（所有任务已完成）"
 
 cleanup: ["./e2e-test-empty-task-list"]

@@ -1,6 +1,6 @@
-# 测试用例：只完成指定的任务，不影响其他任务
-name: "只完成指定的任务"
-description: "验证完成任务时只标记指定的任务号，不会错误地标记其他任务"
+# 测试用例：批量完成时的精确匹配
+name: "批量完成时的精确匹配"
+description: "验证批量完成任务时只标记指定的任务号，不会错误地标记其他相似编号的任务"
 category: "complete-task"
 priority: "critical"
 
@@ -16,38 +16,67 @@ request:
       path: "./e2e-test-complete-only-specified"
       action:
         type: "complete_task"
-        taskNumber: "3.2"
+        taskNumber: ["2.1", "3.2", "3.4"]  # 批量完成不连续的任务
 
 expect:
   operation: "complete_task"
   additional_checks:
     - type: "value_equals"
-      path: "structuredContent.taskCompleted"
-      value: "3.2"
-      description: "完成的任务应该是 3.2"
+      path: "structuredContent.success"
+      value: true
+      description: "批量操作应该成功"
     
-    # 验证 3.2 被标记为完成
+    - type: "array_equals"
+      path: "structuredContent.completedTasks"
+      values: ["2.1", "3.2", "3.4"]
+      description: "实际完成的任务应该是 2.1, 3.2 和 3.4"
+    
+    # 验证指定任务被标记为完成
+    - type: "file_content"
+      path: "./e2e-test-complete-only-specified/tasks.md"
+      contains: "[x] 2.1. 实现基础装置生成功能"
+      description: "任务 2.1 应该被标记为完成"
+    
     - type: "file_content"
       path: "./e2e-test-complete-only-specified/tasks.md"
       contains: "[x] 3.2. check 操作测试套件"
       description: "任务 3.2 应该被标记为完成"
     
-    # 验证 3.1 仍然未完成
+    - type: "file_content"
+      path: "./e2e-test-complete-only-specified/tasks.md"
+      contains: "[x] 3.4. confirm 操作测试套件"
+      description: "任务 3.4 应该被标记为完成"
+    
+    # 验证未指定的任务保持原状
+    - type: "file_content"
+      path: "./e2e-test-complete-only-specified/tasks.md"
+      contains: "[ ] 2.2. 添加状态变化模拟"
+      description: "任务 2.2 应该保持未完成状态"
+    
     - type: "file_content"
       path: "./e2e-test-complete-only-specified/tasks.md"
       contains: "[ ] 3.1. init 操作测试套件"
       description: "任务 3.1 应该保持未完成状态"
     
-    # 验证 3.3 仍然未完成
     - type: "file_content"
       path: "./e2e-test-complete-only-specified/tasks.md"
       contains: "[ ] 3.3. skip 操作测试套件"
       description: "任务 3.3 应该保持未完成状态"
     
-    # 验证其他章节的任务也未受影响
     - type: "file_content"
       path: "./e2e-test-complete-only-specified/tasks.md"
-      contains: "[ ] 1. **测试基础设施建设**"
-      description: "其他章节任务未受影响"
+      contains: "[ ] 3.5. complete_task 操作测试套件"
+      description: "任务 3.5 应该保持未完成状态"
+    
+    # 验证相似编号的任务不受影响
+    - type: "file_content"
+      path: "./e2e-test-complete-only-specified/tasks.md"
+      contains: "[ ] 1.1. 创建测试环境配置系统"
+      description: "任务 1.1 不应被 2.1 影响"
+    
+    - type: "file_content"
+      path: "./e2e-test-complete-only-specified/tasks.md"
+      contains: "[ ] 4.1. 完整工作流测试"
+      description: "任务 4.1 不应被 2.1 影响"
 
 cleanup: ["./e2e-test-complete-only-specified"]

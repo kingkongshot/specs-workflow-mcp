@@ -375,7 +375,7 @@
     }
   },
   "complete_task": {
-    "success": {
+    "single": {
       "schema": {
         "type": "object",
         "properties": {
@@ -407,6 +407,105 @@
         },
         "required": [
           "taskCompleted",
+          "displayText"
+        ],
+        "additionalProperties": true
+      },
+      "validation": "json_schema"
+    },
+    "batch": {
+      "schema": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Whether the batch operation succeeded"
+          },
+          "completedTasks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "alreadyCompleted": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "failedTasks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "taskNumber": {
+                  "type": "string",
+                  "description": "The task number that failed"
+                },
+                "reason": {
+                  "type": "string",
+                  "description": "The reason why the task could not be completed"
+                }
+              },
+              "required": [
+                "taskNumber",
+                "reason"
+              ],
+              "additionalProperties": true
+            }
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "taskNumber": {
+                  "type": "string"
+                },
+                "success": {
+                  "type": "boolean"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "completed",
+                    "already_completed",
+                    "failed"
+                  ]
+                }
+              },
+              "required": [
+                "taskNumber",
+                "success"
+              ],
+              "additionalProperties": true
+            }
+          },
+          "nextTask": {
+            "type": "object",
+            "properties": {
+              "number": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              }
+            },
+            "required": [],
+            "additionalProperties": true,
+            "nullable": true
+          },
+          "hasNextTask": {
+            "type": "boolean",
+            "description": "Whether there are more tasks to complete"
+          },
+          "displayText": {
+            "type": "string",
+            "description": "Human-readable message about the batch operation"
+          }
+        },
+        "required": [
+          "success",
           "displayText"
         ],
         "additionalProperties": true

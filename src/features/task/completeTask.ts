@@ -7,14 +7,18 @@ import { join } from 'path';
 import { parseTasksFile, parseTasksFromContent, getFirstUncompletedTask, formatTaskForFullDisplay, Task } from '../shared/taskParser.js';
 import { responseBuilder } from '../shared/responseBuilder.js';
 import { WorkflowResult } from '../shared/mcpTypes.js';
+import { BatchCompleteTaskResponse, CompleteTaskResponse } from '../shared/openApiTypes.js';
 
 export interface CompleteTaskOptions {
   path: string;
-  taskNumber: string;
+  taskNumber: string | string[];
 }
 
 export async function completeTask(options: CompleteTaskOptions): Promise<WorkflowResult> {
   const { path, taskNumber } = options;
+  
+  // Normalize input: convert to array for unified processing
+  const taskNumbers = Array.isArray(taskNumber) ? taskNumber : [taskNumber];
   
   if (!existsSync(path)) {
     return {
@@ -37,32 +41,69 @@ export async function completeTask(options: CompleteTaskOptions): Promise<Workfl
     };
   }
   
+  // Batch processing logic
+  if (taskNumbers.length > 1) {
+    const batchResult = await completeBatchTasks(path, tasksPath, taskNumbers);
+    return {
+      displayText: batchResult.displayText,
+      data: { ...batchResult }
+    };
+  } else {
+    const singleResult = await completeSingleTask(path, tasksPath, taskNumbers[0]);
+    return {
+      displayText: singleResult.displayText,
+      data: { ...singleResult }
+    };
+  }
+}
+
+/**
+ * Complete a single task
+ */
+async function completeSingleTask(path: string, tasksPath: string, taskNumber: string): Promise<CompleteTaskResponse> {
   // Read tasks file
   const content = readFileSync(tasksPath, 'utf-8');
+  
+  // Check if task exists
+  const tasksInContent = parseTasksFromContent(content);
+  const targetTask = findTaskByNumber(tasksInContent, taskNumber);
+  
+  if (!targetTask) {
+    throw new Error(responseBuilder.buildErrorResponse('taskNotFound', { taskNumber }));
+  }
+  
+  // If task is already completed, return success (idempotency)
+  if (targetTask.checked) {
+    const allTasks = parseTasksFile(path);
+    const nextTask = getFirstUncompletedTask(allTasks);
+    
+    const result: CompleteTaskResponse = {
+      taskCompleted: taskNumber,
+      displayText: `ℹ️ Task ${taskNumber} is already completed\n\nThis task has already been marked as completed.\n${nextTask ? `Next task: ${nextTask.number}. ${nextTask.description}` : '🎉 All tasks completed!'}`
+    };
+    if (nextTask) {
+      result.hasNextTask = true;
+      result.nextTask = {
+        number: nextTask.number,
+        description: nextTask.description
+      };
+    } else {
+      result.hasNextTask = false;
+    }
+    return result;
+  }
   
   // First check if task can be marked as completed
   const checkResult = checkTaskCanBeCompleted(content, taskNumber);
   if (!checkResult.canComplete) {
-    return {
-      displayText: checkResult.errorMessage!,
-      data: {
-        success: false,
-        error: checkResult.errorReason
-      }
-    };
+    throw new Error(checkResult.errorMessage!);
   }
   
   // Mark task as completed
   const updatedContent = markTaskAsCompleted(content, taskNumber);
   
   if (!updatedContent) {
-    return {
-      displayText: responseBuilder.buildErrorResponse('taskNotFound', { taskNumber }),
-      data: {
-        success: false,
-        error: `Task ${taskNumber} does not exist`
-      }
-    };
+    throw new Error(responseBuilder.buildErrorResponse('taskNotFound', { taskNumber }));
   }
   
   // Save updated file
@@ -90,7 +131,197 @@ export async function completeTask(options: CompleteTaskOptions): Promise<Workfl
     nextTaskFullContent = formatTaskForFullDisplay(taskToDisplay, updatedContent);
   }
   
-  return responseBuilder.buildCompleteTaskResponse(taskNumber, taskToDisplay, nextTaskFullContent, null);
+  const response = responseBuilder.buildCompleteTaskResponse(taskNumber, taskToDisplay, nextTaskFullContent, null);
+  const result: CompleteTaskResponse = {
+    taskCompleted: taskNumber,
+    displayText: response.displayText
+  };
+  if (response.data && 'hasNextTask' in response.data && response.data.hasNextTask) {
+    result.hasNextTask = true;
+    if ('nextTask' in response.data && response.data.nextTask) {
+      result.nextTask = response.data.nextTask as { number: string; description: string };
+    }
+  } else {
+    result.hasNextTask = false;
+  }
+  return result;
+}
+
+/**
+ * Complete multiple tasks in batch
+ */
+async function completeBatchTasks(path: string, tasksPath: string, taskNumbers: string[]): Promise<BatchCompleteTaskResponse> {
+  // Read tasks file
+  const originalContent = readFileSync(tasksPath, 'utf-8');
+  const tasks = parseTasksFromContent(originalContent);
+  
+  // Categorize tasks: already completed, can be completed, cannot be completed
+  const alreadyCompleted: string[] = [];
+  const canBeCompleted: string[] = [];
+  const cannotBeCompleted: Array<{
+    taskNumber: string;
+    reason: string;
+  }> = [];
+  
+  for (const taskNum of taskNumbers) {
+    const targetTask = findTaskByNumber(tasks, taskNum);
+    
+    if (!targetTask) {
+      cannotBeCompleted.push({
+        taskNumber: taskNum,
+        reason: 'Task does not exist'
+      });
+    } else if (targetTask.checked) {
+      alreadyCompleted.push(taskNum);
+    } else if (targetTask.subtasks && targetTask.subtasks.some(s => !s.checked)) {
+      cannotBeCompleted.push({
+        taskNumber: taskNum,
+        reason: 'Has uncompleted subtasks'
+      });
+    } else {
+      canBeCompleted.push(taskNum);
+    }
+  }
+  
+  // If there are tasks that cannot be completed (excluding already completed), return error
+  if (cannotBeCompleted.length > 0) {
+    const errorMessages = cannotBeCompleted
+      .map(v => `- ${v.taskNumber}: ${v.reason}`)
+      .join('\n');
+    
+    return {
+      success: false,
+      completedTasks: [],
+      alreadyCompleted: [],
+      failedTasks: cannotBeCompleted,
+      displayText: `❌ Batch task completion failed\n\nThe following tasks cannot be completed:\n${errorMessages}\n\nPlease resolve these issues and try again.`
+    };
+  }
+  
+  // If no tasks can be completed but there are already completed tasks, still return success
+  if (canBeCompleted.length === 0 && alreadyCompleted.length > 0) {
+    const allTasks = parseTasksFile(path);
+    const nextTask = getFirstUncompletedTask(allTasks);
+    
+    const alreadyCompletedText = alreadyCompleted
+      .map(t => `- ${t} (already completed)`)
+      .join('\n');
+    
+    const displayText = `ℹ️ Batch task processing completed\n\nThe following tasks were already completed:\n${alreadyCompletedText}\n\n${nextTask ? `Next task: ${nextTask.number}. ${nextTask.description}` : '🎉 All tasks completed!'}`;
+    
+    return {
+      success: true,
+      completedTasks: [],
+      alreadyCompleted,
+      nextTask: nextTask ? {
+        number: nextTask.number,
+        description: nextTask.description
+      } : undefined,
+      hasNextTask: nextTask !== null,
+      displayText
+    };
+  }
+  
+  // Execution phase: complete tasks in dependency order
+  let currentContent = originalContent;
+  const actuallyCompleted: string[] = [];
+  const results: Array<{
+    taskNumber: string;
+    success: boolean;
+    status: 'completed' | 'already_completed' | 'failed';
+  }> = [];
+  
+  try {
+    // Sort by task number, ensure parent tasks are processed after subtasks (avoid dependency conflicts)
+    const sortedTaskNumbers = [...canBeCompleted].sort((a, b) => {
+      // Subtasks first (numbers with more dots have priority)
+      const aDepth = a.split('.').length;
+      const bDepth = b.split('.').length;
+      if (aDepth !== bDepth) {
+        return bDepth - aDepth; // Process deeper levels first
+      }
+      return a.localeCompare(b); // Same depth, sort by string
+    });
+    
+    for (const taskNum of sortedTaskNumbers) {
+      const updatedContent = markTaskAsCompleted(currentContent, taskNum);
+      
+      if (!updatedContent) {
+        // This should not happen as we have already validated
+        throw new Error(`Unexpected error: Task ${taskNum} could not be marked`);
+      }
+      
+      currentContent = updatedContent;
+      actuallyCompleted.push(taskNum);
+      results.push({
+        taskNumber: taskNum,
+        success: true,
+        status: 'completed' as const
+      });
+    }
+    
+    // Add results for already completed tasks
+    for (const taskNum of alreadyCompleted) {
+      results.push({
+        taskNumber: taskNum,
+        success: true,
+        status: 'already_completed' as const
+      });
+    }
+    
+    // All tasks completed successfully, save file
+    if (actuallyCompleted.length > 0) {
+      writeFileSync(tasksPath, currentContent, 'utf-8');
+    }
+    
+    // Build success response
+    const allTasks = parseTasksFile(path);
+    const nextTask = getFirstUncompletedTask(allTasks);
+    
+    // Build detailed completion information
+    let completedInfo = '';
+    if (actuallyCompleted.length > 0) {
+      completedInfo += 'Newly completed tasks:\n' + actuallyCompleted.map(t => `- ${t}`).join('\n');
+    }
+    if (alreadyCompleted.length > 0) {
+      if (completedInfo) completedInfo += '\n\n';
+      completedInfo += 'Already completed tasks:\n' + alreadyCompleted.map(t => `- ${t} (already completed)`).join('\n');
+    }
+    
+    const displayText = `✅ Batch task processing succeeded\n\n${completedInfo}\n\n${nextTask ? `Next task: ${nextTask.number}. ${nextTask.description}` : '🎉 All tasks completed!'}`;
+    
+    return {
+      success: true,
+      completedTasks: actuallyCompleted,
+      alreadyCompleted,
+      failedTasks: [],
+      results,
+      nextTask: nextTask ? {
+        number: nextTask.number,
+        description: nextTask.description
+      } : undefined,
+      hasNextTask: nextTask !== null,
+      displayText
+    };
+    
+  } catch (error) {
+    // Execution failed, need to rollback to original state
+    if (actuallyCompleted.length > 0) {
+      writeFileSync(tasksPath, originalContent, 'utf-8');
+    }
+    
+    return {
+      success: false,
+      completedTasks: [],
+      alreadyCompleted: [],
+      failedTasks: [{
+        taskNumber: 'batch',
+        reason: error instanceof Error ? error.message : String(error)
+      }],
+      results,
+      displayText: `❌ Batch task execution failed\n\nError: ${error instanceof Error ? error.message : String(error)}\n\nRolled back to original state.`
+    };
+  }
 }
 
 /**
@@ -112,14 +343,8 @@ function checkTaskCanBeCompleted(content: string, taskNumber: string): {
     };
   }
   
-  // Check if task is already completed
-  if (targetTask.checked) {
-    return {
-      canComplete: false,
-      errorMessage: responseBuilder.buildErrorResponse('taskAlreadyCompleted', { taskNumber }),
-      errorReason: 'Already completed'
-    };
-  }
+  // Note: Already completed check is now handled before calling this function
+  // No longer checking targetTask.checked here
   
   // Check if there are uncompleted subtasks
   if (targetTask.subtasks && targetTask.subtasks.some(s => !s.checked)) {

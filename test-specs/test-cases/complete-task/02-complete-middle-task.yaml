@@ -1,6 +1,6 @@
-# 测试用例：完成中间的任务
-name: "完成中间的任务"
-description: "测试完成任务列表中间的某个任务"
+# 测试用例：批量完成混合任务
+name: "批量完成混合任务"
+description: "测试批量完成不同层级的任务，包括已完成的任务"
 category: "complete-task"
 priority: "high"
 
@@ -16,16 +16,24 @@ request:
       path: "./e2e-test-complete-middle"
       action:
         type: "complete_task"
-        taskNumber: "3.1"
+        taskNumber: ["1.1", "3.1", "3.2", "4.1"]  # 1.1已完成，其他未完成
 
 expect:
   operation: "complete_task"
   # JSON Schema 验证会自动验证结构是否符合 OpenAPI 规范
   additional_checks:
     - type: "value_equals"
-      path: "structuredContent.taskCompleted"
-      value: "3.1"
-      description: "任务号应该是 3.1"
+      path: "structuredContent.success"
+      value: true
+      description: "批量操作应该成功（即使包含已完成的任务）"
+    - type: "array_equals"
+      path: "structuredContent.completedTasks"
+      values: ["3.1", "3.2", "4.1"]
+      description: "实际完成的任务应该是 3.1, 3.2 和 4.1"
+    - type: "array_equals"
+      path: "structuredContent.alreadyCompleted"
+      values: ["1.1"]
+      description: "1.1 应该被识别为已完成的任务"
     - type: "value_equals"
       path: "structuredContent.hasNextTask"
       value: true
@@ -33,6 +41,18 @@ expect:
     - type: "file_content"
       path: "./e2e-test-complete-middle/tasks.md"
       contains: "[x] 3.1. init 操作测试套件"
-      description: "任务文件中第 3.1 个任务应该被标记为完成"
+      description: "任务 3.1 应该被标记为完成"
+    - type: "file_content"
+      path: "./e2e-test-complete-middle/tasks.md"
+      contains: "[x] 3.2. check 操作测试套件"
+      description: "任务 3.2 应该被标记为完成"
+    - type: "file_content"
+      path: "./e2e-test-complete-middle/tasks.md"
+      contains: "[x] 4.1. 完整工作流测试"
+      description: "任务 4.1 应该被标记为完成"
+    - type: "file_content"
+      path: "./e2e-test-complete-middle/tasks.md"
+      contains: "[x] 1.1. 创建测试环境配置系统"
+      description: "任务 1.1 应该保持完成状态"
 
 cleanup: ["./e2e-test-complete-middle"]
