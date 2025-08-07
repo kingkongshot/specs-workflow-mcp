@@ -16,7 +16,7 @@ request:
       path: "./e2e-test-complete-last"
       action:
         type: "complete_task"
-        taskNumber: "10"
+        taskNumber: "6.2"
 
 expect:
   operation: "complete_task"
@@ -24,19 +24,21 @@ expect:
   additional_checks:
     - type: "value_equals"
       path: "structuredContent.taskCompleted"
-      value: "10"
-      description: "任务号应该是 10"
+      value: "6.2"
+      description: "任务号应该是 6.2"
+    # 完成 6.2 后，由于 6.1 已完成，父任务 6 会自动标记完成
+    # 所以所有任务都完成了，没有下一个任务
     - type: "value_equals"
       path: "structuredContent.hasNextTask"
       value: false
-      description: "没有下一个任务"
-    - type: "value_equals"
-      path: "structuredContent.nextTask"
-      value: null
-      description: "下一个任务为空"
+      description: "所有任务都已完成，没有下一个任务"
+    - type: "value_contains"
+      path: "structuredContent.displayText"
+      contains: "Task 6.2 marked as completed"
+      description: "显示文本应该包含任务完成信息"
     - type: "value_contains"
       path: "structuredContent.displayText"
       contains: "All tasks completed"
-      description: "显示文本应该包含全部完成的信息"
+      description: "显示文本应该包含所有任务完成的信息"
 
 cleanup: ["./e2e-test-complete-last"]

@@ -27,19 +27,47 @@ expect:
   operation: "init"
   error: false
   additional_checks:
+    # 验证文件创建
     - type: "file_exists"
       path: "./e2e-test-init-basic/requirements.md"
       description: "需求文档应该被创建"
     - type: "file_exists"
       path: "./e2e-test-init-basic/.workflow-confirmations.json"
       description: "工作流状态文件应该被创建"
+    # 验证响应内容
+    - type: "value_equals"
+      path: "structuredContent.success"
+      value: true
+      description: "初始化应该成功"
+    - type: "value_equals"
+      path: "structuredContent.data.featureName"
+      value: "基础测试功能"
+      description: "功能名称应该正确"
+    - type: "value_equals"
+      path: "structuredContent.data.nextAction"
+      value: "edit_requirements"
+      description: "下一步应该是编辑需求"
+    # 验证需求文档内容
+    - type: "file_content"
+      path: "./e2e-test-init-basic/requirements.md"
+      contains: "基础测试功能"
+      description: "需求文档应包含功能名称"
+    - type: "file_content"
+      path: "./e2e-test-init-basic/requirements.md"
+      contains: "这是一个用于测试初始化功能的项目"
+      description: "需求文档应包含项目介绍"
+    # 验证状态文件内容
     - type: "file_content"
       path: "./e2e-test-init-basic/.workflow-confirmations.json"
       contains: '"requirements":false'
       description: "需求阶段应该未确认"
     - type: "file_content"
       path: "./e2e-test-init-basic/.workflow-confirmations.json"
-      contains: '"confirmed"'
-      description: "状态文件应包含 confirmed 字段"
+      contains: '"design":false'
+      description: "设计阶段应该未确认"
+    - type: "file_content"
+      path: "./e2e-test-init-basic/.workflow-confirmations.json"
+      contains: '"tasks":false'
+      description: "任务阶段应该未确认"
 
 cleanup: ["./e2e-test-init-basic"]  # 测试后清理

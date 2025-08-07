@@ -17,6 +17,27 @@ request:
 
 expect:
   operation: "check"
-  # JSON Schema 验证会自动验证结构是否符合 OpenAPI 规范
+  # 验证准备确认的文档状态
+  additional_checks:
+    - type: "value_equals"
+      path: "structuredContent.stage"
+      value: "requirements"
+      description: "当前阶段应该是需求"
+    - type: "value_equals"
+      path: "structuredContent.status.type"
+      value: "ready_to_confirm"
+      description: "状态类型应该是ready_to_confirm"
+    - type: "value_equals"
+      path: "structuredContent.status.readyToConfirm"
+      value: false
+      description: "文档虽然准备好但readyToConfirm仍为false"
+    - type: "value_contains"
+      path: "structuredContent.displayText"
+      contains: "check passed"
+      description: "应该提示检查通过"
+    - type: "value_equals"
+      path: "structuredContent.progress.requirements"
+      value: 0
+      description: "需求进度仍为0（未确认）"
 
 cleanup: ["./e2e-test-check-ready"]

@@ -5,9 +5,21 @@
  * 组合各种验证逻辑，提供统一的验证接口
  */
 
-import { validateSchema } from './schemaValidator.js';
 import { performAdditionalCheck } from './additionalChecks.js';
 import { generateExpectedResponseFromSchema } from '../loader/expectedResponseLoader.js';
+import { StrictConformanceValidator } from './openApiConformanceValidator.js';
+import path from 'path';
+import fs from 'fs';
+
+// 创建全局严格模式 OpenAPI 验证器实例
+const openApiValidator = new StrictConformanceValidator(
+  path.resolve(process.cwd(), '../api/spec-workflow.openapi.yaml')
+);
+
+// 初始化时加载 OpenAPI 规范
+openApiValidator.loadSpec().catch(error => {
+  console.error('警告: 无法加载 OpenAPI 规范:', error.message);
+});
 
 /**
  * 验证响应
@@ -53,7 +65,7 @@ async function validateErrorResponse(response, errorChecks, additionalChecks) {
     errors: [],
     actualResponse: response,
     expectedResponse: { isError: true },
-    schemaValidation: null
+    openApiValidation: null
   };
   
   // 验证是否确实是错误响应
@@ -101,7 +113,7 @@ async function handleUnexpectedError(response, additionalChecks) {
     warnings: [],
     actualResponse: response,
     expectedResponse: { isError: true },
-    schemaValidation: null
+    openApiValidation: null
   };
   
   // 只执行不依赖 structuredContent 的额外检查
@@ -157,7 +169,7 @@ async function validateSuccessResponse(response, operation, expectedResponses, a
       errors: [`未找到 ${operation}.${responseType} 的预期响应定义`],
       actualResponse: response,
       expectedResponse: null,
-      schemaValidation: null
+      openApiValidation: null
     };
   }
   
@@ -167,21 +179,73 @@ async function validateSuccessResponse(response, operation, expectedResponses, a
     warnings: [],
     actualResponse: response,
     expectedResponse: generateExpectedResponseFromSchema(expected.schema),
-    schemaValidation: null
+    openApiValidation: null
   };
   
-  // 进行 JSON Schema 验证
-  if (expected.validation === 'json_schema') {
-    const schemaValidation = validateSchema(response.structuredContent, expected.schema);
-    result.schemaValidation = schemaValidation;
+  // 执行 OpenAPI 一致性验证（主要验证）
+  try {
+    const validationResult = openApiValidator.validateResponse(operation, response.structuredContent, testCase);
+    result.openApiValidation = validationResult;
     
-    if (!schemaValidation.passed) {
-      result.passed = false;
-      result.errors.push('JSON Schema 验证失败:');
-      schemaValidation.errors.forEach(error => {
-        result.errors.push(`  - ${error.instancePath || 'root'}: ${error.message}`);
-      });
+    // 保存验证详情到临时目录（用于调试）
+    if (process.env.TEST_CLEANUP_AFTER_RUN === 'false' || !validationResult.valid) {
+      try {
+        const tempDir = path.join(process.cwd(), 'temp', 'openapi-validation-details');
+        if (!fs.existsSync(tempDir)) {
+          fs.mkdirSync(tempDir, { recursive: true });
+        }
+        
+        const timestamp = Date.now();
+        const testName = testCase?.name || 'unknown';
+        const safeName = testName.replace(/[^\w-]/g, '_').substring(0, 50);
+        const filename = `validation-${operation}-${safeName}-${timestamp}.json`;
+        const filepath = path.join(tempDir, filename);
+        
+        const report = openApiValidator.generateConformanceReport(operation, response.structuredContent, testCase);
+        fs.writeFileSync(filepath, JSON.stringify(report, null, 2));
+        
+        // 如果验证失败，添加文件引用到警告中
+        if (!validationResult.valid) {
+          result.warnings.push(`[OpenAPI 验证详情] 保存到: temp/openapi-validation-details/${filename}`);
+        }
+      } catch (saveError) {
+        // 静默忽略保存错误
+      }
     }
+    
+    if (!validationResult.valid) {
+      result.passed = false;
+      result.errors.push('[OpenAPI 一致性验证] 响应不符合 OpenAPI 规范:');
+      
+      // 添加验证错误
+      validationResult.errors.forEach(error => {
+        result.errors.push(`  - ${error}`);
+      });
+      
+      // 添加警告信息
+      if (validationResult.warnings && validationResult.warnings.length > 0) {
+        validationResult.warnings.forEach(warning => {
+          result.warnings.push(`  - ${warning}`);
+        });
+      }
+      
+      // 添加一致性检查的详细信息
+      if (validationResult.conformance) {
+        const conformance = validationResult.conformance;
+        if (!conformance.structure?.valid) {
+          result.errors.push('  [结构验证失败]');
+        }
+        if (!conformance.values?.valid) {
+          result.errors.push('  [值验证失败]');
+        }
+        if (!conformance.completeness?.valid) {
+          result.errors.push('  [完整性验证失败]');
+        }
+      }
+    }
+  } catch (error) {
+    // OpenAPI 验证出错不应该导致整个测试失败，记录警告
+    result.warnings.push(`OpenAPI 验证出错: ${error.message}`);
   }
   
   // 执行额外检查

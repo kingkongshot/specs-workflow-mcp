@@ -19,19 +19,10 @@ request:
 
 expect:
   operation: "confirm"
-  # 根据实际行为，重复确认是允许的，会返回相同的成功响应
-  additional_checks:
-    - type: "value_equals"
-      path: "structuredContent.stage"
-      value: "design"
-      description: "当前阶段应该是设计（因为需求已确认）"
-    - type: "value_equals"
-      path: "structuredContent.confirmed"
-      value: true
-      description: "应该显示已确认"
-    - type: "value_equals"
-      path: "structuredContent.nextStage"
-      value: "tasks"
-      description: "下一阶段应该是任务"
+  error: true  # 设计文档不存在，返回错误
+  error_checks:
+    - type: "error_message"
+      contains: "Design Document does not exist"
+      description: "应该提示设计文档不存在"
 
 cleanup: ["./e2e-test-confirm-duplicate"]

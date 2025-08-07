@@ -54,5 +54,11 @@ expect:
       path: "./e2e-test-complete-batch/tasks.md"
       contains: "[x] 1. **测试基础设施建设**"
       description: "当所有子任务完成后，父任务 1 应该自动被标记为完成"
+    - type: "no_template_placeholders"
+      path: "structuredContent.displayText"
+      description: "显示文本不应包含未替换的占位符"
+    - type: "no_template_placeholders"
+      path: "content[0].text"
+      description: "响应文本不应包含未替换的占位符"
 
 cleanup: ["./e2e-test-complete-batch"]

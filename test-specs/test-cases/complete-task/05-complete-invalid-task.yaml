@@ -20,15 +20,24 @@ request:
 
 expect:
   operation: "complete_task"
-  # JSON Schema 验证会自动验证结构是否符合 OpenAPI 规范
-  additional_checks:
-    - type: "value_equals"
-      path: "isError"
-      value: true
-      description: "应该是错误响应"
-    - type: "value_contains"
-      path: "content[0].text"
+  error: true  # 期望错误响应
+  error_checks:
+    - type: "error_message"
       contains: "not found"
       description: "错误信息应该提到任务未找到"
+  additional_checks:
+    # 验证错误不产生副作用（确保文件未被修改）
+    - type: "file_content"
+      path: "./e2e-test-complete-invalid/tasks.md"
+      contains: "[ ] 1.1. 创建测试环境配置系统"
+      description: "任务 1.1 应该保持未完成状态"
+    - type: "file_content"
+      path: "./e2e-test-complete-invalid/tasks.md"
+      contains: "[ ] 1.2. 实现 MCP 连接管理器"
+      description: "任务 1.2 应该保持未完成状态"
+    - type: "file_content"
+      path: "./e2e-test-complete-invalid/tasks.md"
+      contains: "[ ] 2. **测试装置生成器开发**"
+      description: "任务 2 应该保持未完成状态"
 
 cleanup: ["./e2e-test-complete-invalid"]

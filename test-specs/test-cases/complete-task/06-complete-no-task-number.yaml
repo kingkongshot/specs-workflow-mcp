@@ -20,14 +20,9 @@ request:
 
 expect:
   operation: "complete_task"
-  # JSON Schema 验证会自动验证结构是否符合 OpenAPI 规范
-  additional_checks:
-    - type: "value_equals"
-      path: "isError"
-      value: true
-      description: "应该是错误响应"
-    - type: "value_contains"
-      path: "content[0].text"
+  error: true  # 期望错误响应
+  error_checks:
+    - type: "error_message"
       contains: "taskNumber"
       description: "错误信息应该提到缺少 taskNumber 参数"
 

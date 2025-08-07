@@ -38,8 +38,14 @@ expect:
       contains: "Continue editing existing project"
       description: "应该提供继续编辑的选项"
   additional_checks:
+    # 验证原有文件未被修改（副作用检查）
     - type: "file_exists"
       path: "./e2e-test-init-duplicate/.workflow-confirmations.json"
-      description: "项目文件应该存在"
+      description: "原有状态文件应该存在"
+    - type: "file_content"
+      path: "./e2e-test-init-duplicate/requirements.md"
+      contains: "# Existing Project - Requirements Document"
+      description: "原有需求文档标题应该保持不变"
+    # file_not_contains 检查类型不存在，只能验证正向内容
 
 cleanup: ["./e2e-test-init-duplicate"]

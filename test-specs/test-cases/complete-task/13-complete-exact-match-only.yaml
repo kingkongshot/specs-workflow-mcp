@@ -20,18 +20,12 @@ request:
 
 expect:
   operation: "complete_task"
-  additional_checks:
-    - type: "value_equals"
-      path: "isError"
-      value: true
-      description: "应该返回错误（主任务有未完成的子任务）"
-    
-    # 验证错误信息
-    - type: "value_contains"
-      path: "content[0].text"
+  error: true  # 期望错误响应（主任务有未完成的子任务）
+  error_checks:
+    - type: "error_message"
       contains: "has uncompleted subtasks"
       description: "错误信息应该提到有未完成的子任务"
-    
+  additional_checks:
     # 验证 1.1, 1.2, 1.3 等子任务未受影响
     - type: "file_content"
       path: "./e2e-test-complete-exact-match/tasks.md"

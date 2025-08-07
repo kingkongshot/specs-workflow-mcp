@@ -19,20 +19,33 @@ request:
 
 expect:
   operation: "skip"
-  # JSON Schema 验证会自动验证结构是否符合 OpenAPI 规范
+  # 验证跳过设计阶段的响应和副作用
   additional_checks:
+    # 验证响应字段
+    - type: "value_equals"
+      path: "structuredContent.stage"
+      value: "design"
+      description: "当前阶段是设计（返回被跳过的阶段名）"
+    - type: "value_equals"
+      path: "structuredContent.skipped"
+      value: true
+      description: "应该显示已跳过"
+    - type: "value_equals"
+      path: "structuredContent.progress.overall"
+      value: 60
+      description: "整体进度应该是60%"
+    # 验证文件系统副作用
     - type: "file_content"
       path: "./e2e-test-skip-design/.workflow-confirmations.json"
       contains: '"design":true'
       parent_key: "skipped"
       description: "设计阶段应该被标记为已跳过"
-    # MCP 服务器不会在文档中添加跳过标记
-    # - type: "file_content"
-    #   path: "./e2e-test-skip-design/design.md"
-    #   contains: "跳过原因"
-    #   description: "设计文档应该包含跳过标记"
     - type: "file_exists"
       path: "./e2e-test-skip-design/tasks.md"
       description: "应该生成任务文档"
+    - type: "file_content"
+      path: "./e2e-test-skip-design/tasks.md"
+      contains: "## Implementation Tasks"
+      description: "任务文档应该包含任务标题"
 
 cleanup: ["./e2e-test-skip-design"]

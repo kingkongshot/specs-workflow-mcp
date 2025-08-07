@@ -37,5 +37,11 @@ expect:
       path: "structuredContent.nextStage"
       value: "tasks"
       description: "下一阶段应该是任务"
+    - type: "no_template_placeholders"
+      path: "structuredContent.displayText"
+      description: "显示文本不应包含未替换的占位符"
+    - type: "no_template_placeholders"
+      path: "content[0].text"
+      description: "响应文本不应包含未替换的占位符"
 
 cleanup: ["./e2e-test-confirm-design"]

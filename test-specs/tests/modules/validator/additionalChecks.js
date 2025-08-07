@@ -24,6 +24,8 @@ export async function performAdditionalCheck(check, data) {
     'value_equals': checkValueEquals,
     'value_in_range': checkValueInRange,
     'value_contains': checkValueContains,
+    'value_not_contains': checkValueNotContains,
+    'no_template_placeholders': checkNoTemplatePlaceholders,
     'array_equals': checkArrayEquals,
     'array_contains': checkArrayContains
   };
@@ -366,6 +368,63 @@ function checkArrayContains(check, data) {
     return {
       passed: false,
       error: `数组缺少元素: ${check.path} = [${actualArray.join(', ')}] (缺少: [${missingValues.join(', ')}])`
+    };
+  }
+  
+  return { passed: true };
+}
+
+/**
+ * 检查值是否不包含特定内容
+ * @param {Object} check - 检查配置
+ * @param {Object} data - 数据对象
+ * @returns {Object} 检查结果
+ */
+function checkValueNotContains(check, data) {
+  const value = getValueByPath(data, check.path);
+  // 兼容两种字段名：value 或 notContains
+  const unexpectedContent = check.value || check.notContains;
+  
+  // 检查期望值是否为 undefined
+  if (unexpectedContent === undefined) {
+    return {
+      passed: false,
+      error: `测试配置错误: value_not_contains 检查缺少期望值 (value 或 notContains 字段)`
+    };
+  }
+  
+  if (value && String(value).includes(unexpectedContent)) {
+    return {
+      passed: false,
+      error: `值不应该包含: ${check.path} = ${value} (不应包含: ${unexpectedContent})`
+    };
+  } else {
+    return { passed: true };
+  }
+}
+
+/**
+ * 检查是否没有未替换的模板占位符
+ * @param {Object} check - 检查配置
+ * @param {Object} data - 数据对象
+ * @returns {Object} 检查结果
+ */
+function checkNoTemplatePlaceholders(check, data) {
+  const value = getValueByPath(data, check.path);
+  
+  // 如果值不存在或不是字符串，跳过检查
+  if (!value || typeof value !== 'string') {
+    return { passed: true };
+  }
+  
+  // 检查是否包含 ${...} 格式的占位符
+  const placeholderPattern = /\$\{[^}]+\}/g;
+  const placeholders = value.match(placeholderPattern);
+  
+  if (placeholders && placeholders.length > 0) {
+    return {
+      passed: false,
+      error: `发现未替换的模板占位符: ${check.path} 包含 ${placeholders.join(', ')}`
     };
   }
   

@@ -17,6 +17,27 @@ request:
 
 expect:
   operation: "check"
-  # 使用 JSON Schema 验证，无需指定具体场景
+  # 验证未编辑文档的状态
+  additional_checks:
+    - type: "value_equals"
+      path: "structuredContent.stage"
+      value: "requirements"
+      description: "当前阶段应该是需求"
+    - type: "value_equals"
+      path: "structuredContent.status.type"
+      value: "not_edited"
+      description: "状态类型应该是未编辑"
+    - type: "value_equals"
+      path: "structuredContent.status.readyToConfirm"
+      value: false
+      description: "文档未准备好确认"
+    - type: "value_contains"
+      path: "structuredContent.status.reason"
+      contains: "template markers"
+      description: "原因应该提到模板标记"
+    - type: "value_equals"
+      path: "structuredContent.progress.overall"
+      value: 0
+      description: "整体进度应该是0%"
 
 cleanup: ["./e2e-test-check"]

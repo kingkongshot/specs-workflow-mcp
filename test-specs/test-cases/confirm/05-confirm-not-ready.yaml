@@ -19,23 +19,27 @@ request:
 
 expect:
   operation: "confirm"
-  # 文档包含模板标记时，confirm 操作应该失败
-  additional_checks:
-    - type: "value_equals"
-      path: "isError"
-      value: true
-      description: "应该是错误响应"
-    - type: "value_contains"
-      path: "content[0].text"
-      value: "Document not ready for confirmation"
+  error: true  # 文档包含模板标记时，confirm 操作应该失败
+  error_checks:
+    - type: "error_message"
+      contains: "Document not ready for confirmation"
       description: "错误信息应该提到文档未准备好"
-    - type: "value_contains"
-      path: "content[0].text"
-      value: "template markers"
+    - type: "error_message"
+      contains: "template markers"
       description: "错误信息应该提到模板标记"
-    - type: "value_contains"
-      path: "content[0].text"
-      value: "action.type=\"skip\""
+    - type: "error_message"
+      contains: 'action.type="skip"'
       description: "错误信息应该提示可以使用 skip"
+  additional_checks:
+    # 验证错误不产生副作用
+    - type: "file_content"
+      path: "./e2e-test-confirm-not-ready/.workflow-confirmations.json"
+      contains: '"requirements":false'
+      description: "需求阶段应该保持未确认状态"
+    # file_not_exists 检查需要验证是否支持
+    - type: "file_content"
+      path: "./e2e-test-confirm-not-ready/requirements.md"
+      contains: "<template-requirements>"
+      description: "需求文档应该保持原有模板标记"
 
 cleanup: ["./e2e-test-confirm-not-ready"]
