@@ -3,6 +3,7 @@ import { OpenApiLoader } from './openApiLoader.js';
 import { Task } from './taskParser.js';
 import { WorkflowResult } from './mcpTypes.js';
 import { isObject, hasProperty, isArray } from './typeGuards.js';
+import { TaskGuidanceExtractor } from './taskGuidanceTemplate.js';
 
 // Response builder - builds responses based on OpenAPI specification
 export class ResponseBuilder {
@@ -249,7 +250,18 @@ export class ResponseBuilder {
 
     // If tasks stage confirmation and has first task content, append to display text
     if (stage === 'tasks' && nextStage === null && firstTaskContent) {
-      response.displayText += `\n\n📋 Next task to implement:\n${firstTaskContent}\n\nModel please ask the user: "Ready to start the first task?"`;
+      // Extract first uncompleted subtask for focused planning
+      const firstSubtask = TaskGuidanceExtractor.extractFirstSubtask(firstTaskContent);
+      
+      // Build guidance text using the template
+      const guidanceText = TaskGuidanceExtractor.buildGuidanceText(
+        firstTaskContent,
+        firstSubtask,
+        undefined, // no specific task number
+        true // is first task
+      );
+      
+      response.displayText += '\n\n' + guidanceText;
     }
 
     // Resolve resource references
@@ -315,19 +327,29 @@ export class ResponseBuilder {
     });
 
     if (!example) {
-      // If no example found, create a default response
-      let displayText;
+      // If no example found, create a default response with enhanced guidance
+      let displayText = TaskGuidanceExtractor.getCompletionMessage('taskCompleted', taskNumber);
+      
       if (nextTask) {
-        displayText = `✅ Task ${taskNumber} marked as completed!\n\n📋 Next task:`;
         if (nextTaskFullContent) {
-          displayText += `\n${nextTaskFullContent}`;
+          // Extract first uncompleted subtask for focused planning
+          const firstSubtask = TaskGuidanceExtractor.extractFirstSubtask(nextTaskFullContent);
+          
+          // Build guidance text using the template
+          const guidanceText = TaskGuidanceExtractor.buildGuidanceText(
+            nextTaskFullContent,
+            firstSubtask,
+            nextTask.number,
+            false // not first task
+          );
+          
+          displayText += '\n\n' + guidanceText;
         } else {
           displayText += `\nTask ${nextTask.number}: ${nextTask.description}`;
+          displayText += `\n\nModel: Please ask user "Ready to start task ${nextTask.number}?"`;
         }
-        
-        displayText += `\n\nModel please ask the user: "Ready to start task ${nextTask.number}?"`;
       } else {
-        displayText = `✅ Task ${taskNumber} marked as completed!\n\n🎉 Congratulations! All tasks completed!\n\nYou have successfully completed all implementation tasks. Project implementation phase completed.`;
+        displayText += '\n\n' + TaskGuidanceExtractor.getCompletionMessage('allCompleted');
       }
       
       // Return WorkflowResult format
@@ -355,22 +377,34 @@ export class ResponseBuilder {
       description: nextTask.description
     } : null;
 
-    // Update display text
+    // Update display text with enhanced guidance
     if (nextTask) {
-      let displayText = `✅ Task ${taskNumber} marked as completed!\n\n📋 Next task:`;
+      let displayText = TaskGuidanceExtractor.getCompletionMessage('taskCompleted', taskNumber);
       
       if (nextTaskFullContent) {
-        displayText += `\n${nextTaskFullContent}`;
+        // Add related requirements if provided
+        let contentWithRequirements = nextTaskFullContent;
+        if (relatedRequirements) {
+          contentWithRequirements += `\n${relatedRequirements}`;
+        }
+        
+        // Extract first uncompleted subtask for focused planning
+        const firstSubtask = TaskGuidanceExtractor.extractFirstSubtask(nextTaskFullContent);
+        
+        // Build guidance text using the template
+        const guidanceText = TaskGuidanceExtractor.buildGuidanceText(
+          contentWithRequirements,
+          firstSubtask,
+          nextTask.number,
+          false // not first task
+        );
+        
+        displayText += '\n\n' + guidanceText;
       } else {
         displayText += `\nTask ${nextTask.number}: ${nextTask.description}`;
+        displayText += `\n\nModel: Please ask user "Ready to start task ${nextTask.number}?"`;
       }
       
-      // Add related requirements
-      if (relatedRequirements) {
-        displayText += `\n${relatedRequirements}`;
-      }
-      
-      displayText += `\n\nModel please ask the user: "Ready to start task ${nextTask.number}?"`;
       response.displayText = displayText;
     } else {
       response.displayText = response.displayText

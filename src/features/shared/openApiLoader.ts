@@ -41,6 +41,29 @@ export interface OpenApiSpec {
   }>;
   'x-global-config': unknown;
   'x-document-templates': Record<string, unknown>;
+  'x-task-guidance-template'?: {
+    separator: string;
+    header: string;
+    instructions: {
+      prefix: string;
+      taskFocus: string;
+      progressTracking: string;
+      workflow: string;
+    };
+    prompts: {
+      firstTask: string;
+      nextTask: string;
+      continueTask: string;
+      batchContinue: string;
+    };
+    completionMessages: {
+      taskCompleted: string;
+      allCompleted: string;
+      alreadyCompleted: string;
+      batchSucceeded: string;
+      batchCompleted: string;
+    };
+  };
 }
 
 // Singleton pattern for loading OpenAPI specification
@@ -207,6 +230,12 @@ export class OpenApiLoader {
     }
 
     return resolved.length > 0 ? resolved : undefined;
+  }
+
+  // Get task guidance template
+  getTaskGuidanceTemplate(): OpenApiSpec['x-task-guidance-template'] | null {
+    if (!this.spec) return null;
+    return this.spec['x-task-guidance-template'] || null;
   }
 }
 
