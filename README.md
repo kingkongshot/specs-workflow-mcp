@@ -25,6 +25,9 @@ Guide AI to systematically complete software development through a structured **
 
 ## Recent Updates
 
+> **v1.0.7**
+> - 🎯 Improved reliability for most models to manage tasks with spec workflow
+>
 > **v1.0.6**
 > - ✨ Batch task completion: Complete multiple tasks at once for faster progress on large projects
 > 
