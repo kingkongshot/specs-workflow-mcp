@@ -4,10 +4,11 @@
 
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
-import { parseTasksFile, parseTasksFromContent, getFirstUncompletedTask, formatTaskForFullDisplay, Task } from '../shared/taskParser.js';
+import { parseTasksFromContent, getFirstUncompletedTask, formatTaskForFullDisplay, Task } from '../shared/taskParser.js';
 import { responseBuilder } from '../shared/responseBuilder.js';
 import { WorkflowResult } from '../shared/mcpTypes.js';
 import { BatchCompleteTaskResponse, CompleteTaskResponse } from '../shared/openApiTypes.js';
+import { TaskGuidanceExtractor } from '../shared/taskGuidanceTemplate.js';
 
 export interface CompleteTaskOptions {
   path: string;
@@ -74,22 +75,39 @@ async function completeSingleTask(path: string, tasksPath: string, taskNumber: s
   
   // If task is already completed, return success (idempotency)
   if (targetTask.checked) {
-    const allTasks = parseTasksFile(path);
+    const allTasks = parseTasksFromContent(content);
     const nextTask = getFirstUncompletedTask(allTasks);
+    
+    let displayText = TaskGuidanceExtractor.getCompletionMessage('alreadyCompleted', taskNumber);
+    
+    if (nextTask) {
+      const nextTaskFullContent = formatTaskForFullDisplay(nextTask, content);
+      
+      // Extract first uncompleted subtask for focused planning
+      const firstSubtask = TaskGuidanceExtractor.extractFirstSubtask(nextTaskFullContent);
+      
+      // Build guidance text using the template
+      const guidanceText = TaskGuidanceExtractor.buildGuidanceText(
+        nextTaskFullContent,
+        firstSubtask,
+        nextTask.number,
+        false // not first task, continuing
+      );
+      
+      displayText += '\n\n' + guidanceText;
+    } else {
+      displayText += '\n\n' + TaskGuidanceExtractor.getCompletionMessage('allCompleted');
+    }
     
     const result: CompleteTaskResponse = {
       taskCompleted: taskNumber,
-      displayText: `ℹ️ Task ${taskNumber} is already completed\n\nThis task has already been marked as completed.\n${nextTask ? `Next task: ${nextTask.number}. ${nextTask.description}` : '🎉 All tasks completed!'}`
-    };
-    if (nextTask) {
-      result.hasNextTask = true;
-      result.nextTask = {
+      displayText: displayText,
+      hasNextTask: nextTask !== null,
+      nextTask: nextTask ? {
         number: nextTask.number,
         description: nextTask.description
-      };
-    } else {
-      result.hasNextTask = false;
-    }
+      } : undefined
+    };
     return result;
   }
   
@@ -109,8 +127,9 @@ async function completeSingleTask(path: string, tasksPath: string, taskNumber: s
   // Save updated file
   writeFileSync(tasksPath, updatedContent, 'utf-8');
   
-  // Parse updated task list to find next task
-  const tasks = parseTasksFile(path);
+  // Parse updated task list from the updated content (not from file)
+  // This ensures we get the correct state after auto-completing parent tasks
+  const tasks = parseTasksFromContent(updatedContent);
   const nextTask = getFirstUncompletedTask(tasks);
   
   // If completing a subtask, return complete information of the main task
@@ -120,9 +139,10 @@ async function completeSingleTask(path: string, tasksPath: string, taskNumber: s
   if (taskNumber.includes('.')) {
     // Get main task number
     const mainTaskNumber = taskNumber.split('.')[0];
-    // Find main task
+    // Find main task from updated content
     const mainTask = findTaskByNumber(tasks, mainTaskNumber);
-    if (mainTask) {
+    if (mainTask && !mainTask.checked) {
+      // If main task is not completed, show it as the next task
       taskToDisplay = mainTask;
     }
   }
@@ -200,14 +220,14 @@ async function completeBatchTasks(path: string, tasksPath: string, taskNumbers: 
   
   // If no tasks can be completed but there are already completed tasks, still return success
   if (canBeCompleted.length === 0 && alreadyCompleted.length > 0) {
-    const allTasks = parseTasksFile(path);
+    const allTasks = parseTasksFromContent(originalContent);
     const nextTask = getFirstUncompletedTask(allTasks);
     
     const alreadyCompletedText = alreadyCompleted
       .map(t => `- ${t} (already completed)`)
       .join('\n');
     
-    const displayText = `ℹ️ Batch task processing completed\n\nThe following tasks were already completed:\n${alreadyCompletedText}\n\n${nextTask ? `Next task: ${nextTask.number}. ${nextTask.description}` : '🎉 All tasks completed!'}`;
+    const displayText = `${TaskGuidanceExtractor.getCompletionMessage('batchCompleted')}\n\nThe following tasks were already completed:\n${alreadyCompletedText}\n\n${nextTask ? `Next task: ${nextTask.number}. ${nextTask.description}` : TaskGuidanceExtractor.getCompletionMessage('allCompleted')}`;
     
     return {
       success: true,
@@ -275,7 +295,7 @@ async function completeBatchTasks(path: string, tasksPath: string, taskNumbers: 
     }
     
     // Build success response
-    const allTasks = parseTasksFile(path);
+    const allTasks = parseTasksFromContent(currentContent);
     const nextTask = getFirstUncompletedTask(allTasks);
     
     // Build detailed completion information
@@ -288,7 +308,27 @@ async function completeBatchTasks(path: string, tasksPath: string, taskNumbers: 
       completedInfo += 'Already completed tasks:\n' + alreadyCompleted.map(t => `- ${t} (already completed)`).join('\n');
     }
     
-    const displayText = `✅ Batch task processing succeeded\n\n${completedInfo}\n\n${nextTask ? `Next task: ${nextTask.number}. ${nextTask.description}` : '🎉 All tasks completed!'}`;
+    let displayText = `${TaskGuidanceExtractor.getCompletionMessage('batchSucceeded')}\n\n${completedInfo}`;
+    
+    // Add enhanced guidance for next task
+    if (nextTask) {
+      const nextTaskFullContent = formatTaskForFullDisplay(nextTask, currentContent);
+      
+      // Extract first uncompleted subtask for focused planning
+      const firstSubtask = TaskGuidanceExtractor.extractFirstSubtask(nextTaskFullContent);
+      
+      // Build guidance text using the template
+      const guidanceText = TaskGuidanceExtractor.buildGuidanceText(
+        nextTaskFullContent,
+        firstSubtask,
+        undefined, // no specific task number for batch
+        false // not first task
+      );
+      
+      displayText += '\n\n' + guidanceText;
+    } else {
+      displayText += '\n\n' + TaskGuidanceExtractor.getCompletionMessage('allCompleted');
+    }
     
     return {
       success: true,
