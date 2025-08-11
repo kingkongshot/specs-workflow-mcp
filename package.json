@@ -12,7 +12,7 @@
     "api/**/*"
   ],
   "scripts": {
-    "build": "tsc && chmod 755 dist/index.js",
+    "build": "tsc && chmod 755 dist/index.js && ./scripts/sync-package.sh",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
     "lint": "eslint src",
@@ -22,7 +22,8 @@
     "inspector": "npx @modelcontextprotocol/inspector node dist/index.js",
     "generate:types": "tsx scripts/generateTypes.ts",
     "generate:webui": "tsx scripts/generateOpenApiWebUI.ts",
-    "sync:package": "./scripts/sync-package.sh"
+    "sync:package": "./scripts/sync-package.sh",
+    "publish": "./scripts/publish-npm.sh"
   },
   "keywords": [
     "mcp",

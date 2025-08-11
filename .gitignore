@@ -29,6 +29,9 @@ dist/
 build/
 *.log
 
+# Generated package directory (auto-generated during build)
+package/
+
 # Environment configuration
 .env
 .env.local
