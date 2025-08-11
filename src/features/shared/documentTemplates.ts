@@ -56,40 +56,48 @@ function interpolate(template: string, values: { [key: string]: unknown }): stri
 
 // Get requirements document template
 export function getRequirementsTemplate(featureName: string, introduction: string): string {
+  // Ensure spec is loaded
+  openApiLoader.loadSpec();
   const template = openApiLoader.getDocumentTemplate('requirements');
   if (!template) {
     throw new Error('Requirements template not found in OpenAPI specification');
   }
-  
+
   return formatTemplate(template, { featureName, introduction });
 }
 
 // Get design document template
 export function getDesignTemplate(featureName: string): string {
+  // Ensure spec is loaded
+  openApiLoader.loadSpec();
   const template = openApiLoader.getDocumentTemplate('design');
   if (!template) {
     throw new Error('Design template not found in OpenAPI specification');
   }
-  
+
   return formatTemplate(template, { featureName });
 }
 
 // Get tasks list template
 export function getTasksTemplate(featureName: string): string {
+  // Ensure spec is loaded
+  openApiLoader.loadSpec();
   const template = openApiLoader.getDocumentTemplate('tasks');
   if (!template) {
     throw new Error('Tasks template not found in OpenAPI specification');
   }
-  
+
   return formatTemplate(template, { featureName });
 }
 
 // Get skipped marker template
 export function getSkippedTemplate(featureName: string, stageName: string): string {
+  // Ensure spec is loaded
+  openApiLoader.loadSpec();
   const template = openApiLoader.getDocumentTemplate('skipped');
   if (!template) {
     throw new Error('Skipped template not found in OpenAPI specification');
   }
-  
+
   return formatTemplate(template, { featureName, stageName });
 }

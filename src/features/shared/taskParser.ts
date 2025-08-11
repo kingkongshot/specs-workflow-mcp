@@ -10,6 +10,7 @@ export interface Task {
   description: string;
   checked: boolean;
   subtasks?: Task[];
+  isVirtual?: boolean; // 标识是否为虚拟创建的任务
 }
 
 export function parseTasksFile(path: string): Task[] {
@@ -104,7 +105,8 @@ export function parseTasksFromContent(content: string): Task[] {
           number: parentNumber,
           description: betterTitle || `Task Group ${parentNumber}`,
           checked: false,
-          subtasks: []
+          subtasks: [],
+          isVirtual: true // 标记为虚拟任务
         };
         taskMap.set(parentNumber, virtualParent);
         rootTasks.push(virtualParent);
@@ -174,20 +176,28 @@ function findMainTaskTitle(lines: string[], taskNumber: string): string | null {
 
 export function getFirstUncompletedTask(tasks: Task[]): Task | null {
   for (const task of tasks) {
-    if (!task.checked) {
-      return task;
-    }
-    
-    // Check subtasks
-    if (task.subtasks) {
-      for (const subtask of task.subtasks) {
-        if (!subtask.checked) {
-          return subtask;
-        }
+    // 如果任务有子任务，优先检查子任务
+    if (task.subtasks && task.subtasks.length > 0) {
+      // 检查是否有未完成的子任务
+      const firstUncompletedSubtask = task.subtasks.find(subtask => !subtask.checked);
+
+      if (firstUncompletedSubtask) {
+        // 无论是虚拟主任务还是真实主任务，都返回第一个未完成的子任务
+        return firstUncompletedSubtask;
+      }
+
+      // 如果所有子任务都完成了，但主任务未完成，返回主任务
+      if (!task.checked) {
+        return task;
+      }
+    } else {
+      // 没有子任务的情况，直接检查主任务
+      if (!task.checked) {
+        return task;
       }
     }
   }
-  
+
   return null;
 }
 
@@ -278,7 +288,7 @@ export function formatTaskListOverview(path: string): string {
     });
     
     return taskItems.join('\n');
-  } catch (error) {
+  } catch {
     return 'Error loading tasks list.';
   }
 }

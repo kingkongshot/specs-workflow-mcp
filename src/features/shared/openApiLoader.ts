@@ -104,8 +104,13 @@ export class OpenApiLoader {
     const schemas = this.spec.components.schemas;
     for (const [schemaName, schema] of Object.entries(schemas)) {
       if (!isObject(schema)) continue;
+      // Support standard OpenAPI 3.1.0 examples field
       if ('examples' in schema && Array.isArray(schema.examples)) {
         this.examples.set(schemaName, schema.examples);
+      }
+      // Maintain backward compatibility with custom x-examples field
+      else if ('x-examples' in schema && Array.isArray(schema['x-examples'])) {
+        this.examples.set(schemaName, schema['x-examples']);
       }
     }
   }
@@ -236,6 +241,11 @@ export class OpenApiLoader {
   getTaskGuidanceTemplate(): OpenApiSpec['x-task-guidance-template'] | null {
     if (!this.spec) return null;
     return this.spec['x-task-guidance-template'] || null;
+  }
+
+  // Debug method: get cached examples count
+  getExamplesCount(responseType: string): number {
+    return this.examples.get(responseType)?.length || 0;
   }
 }
 

@@ -1,13 +1,11 @@
 import { openApiLoader } from './openApiLoader.js';
 import { OpenApiLoader } from './openApiLoader.js';
-import { Task } from './taskParser.js';
 import { WorkflowResult } from './mcpTypes.js';
 import { isObject, hasProperty, isArray } from './typeGuards.js';
 import { TaskGuidanceExtractor } from './taskGuidanceTemplate.js';
 
 // Response builder - builds responses based on OpenAPI specification
 export class ResponseBuilder {
-  private spec = openApiLoader.loadSpec();
 
   // Build initialization response
   buildInitResponse(path: string, featureName: string): WorkflowResult {
@@ -60,13 +58,17 @@ export class ResponseBuilder {
   ): WorkflowResult {
     // Select appropriate example based on status type
     const statusType = isObject(status) && 'type' in status ? status.type : 'not_started';
+
+    // Debug info: check examples cache
+    const examplesCount = openApiLoader.getExamplesCount('CheckResponse');
+
     const example = openApiLoader.getResponseExample('CheckResponse', {
       stage,
       'status.type': statusType
     });
 
     if (!example) {
-      throw new Error(`Check response template not found: stage=${stage}, status=${statusType}`);
+      throw new Error(`Check response template not found: stage=${stage}, status=${statusType} (cached examples: ${examplesCount})`);
     }
 
     // Deep copy example
@@ -101,8 +103,9 @@ export class ResponseBuilder {
     if (checkResults && response.displayText.includes('The tasks document includes')) {
       // Dynamically build check items list
       const checkItems = this.buildCheckItemsList(checkResults);
+      // More precise regex that only matches until next empty line or "Model please" line
       response.displayText = response.displayText.replace(
-        /The tasks document includes:[\s\S]*?(?=confirm|please edit|$)/,
+        /The tasks document includes:[\s\S]*?(?=\n\s*Model please|\n\s*\n\s*Model please|$)/,
         `The tasks document includes:\n${checkItems}\n\n`
       );
     }
@@ -252,15 +255,27 @@ export class ResponseBuilder {
     if (stage === 'tasks' && nextStage === null && firstTaskContent) {
       // Extract first uncompleted subtask for focused planning
       const firstSubtask = TaskGuidanceExtractor.extractFirstSubtask(firstTaskContent);
-      
+
+      // 如果没有找到子任务，从任务内容中提取任务描述
+      let effectiveFirstSubtask = firstSubtask;
+      if (!effectiveFirstSubtask) {
+        // 从 firstTaskContent 中提取任务号和描述
+        const taskMatch = firstTaskContent.match(/(\d+(?:\.\d+)*)\.\s*\*?\*?([^*\n]+)/);
+        if (taskMatch) {
+          effectiveFirstSubtask = `${taskMatch[1]}. ${taskMatch[2].trim()}`;
+        } else {
+          effectiveFirstSubtask = 'Next task';
+        }
+      }
+
       // Build guidance text using the template
       const guidanceText = TaskGuidanceExtractor.buildGuidanceText(
         firstTaskContent,
-        firstSubtask,
+        effectiveFirstSubtask,
         undefined, // no specific task number
         true // is first task
       );
-      
+
       response.displayText += '\n\n' + guidanceText;
     }
 
@@ -319,107 +334,7 @@ export class ResponseBuilder {
   }
 
 
-  // Build complete task response
-  buildCompleteTaskResponse(taskNumber: string, nextTask: Task | null, nextTaskFullContent?: string | null, relatedRequirements?: string | null): WorkflowResult {
-    // Select appropriate example based on whether there is a next task
-    const example = openApiLoader.getResponseExample('CompleteTaskResponse', {
-      hasNextTask: nextTask !== null
-    });
 
-    if (!example) {
-      // If no example found, create a default response with enhanced guidance
-      let displayText = TaskGuidanceExtractor.getCompletionMessage('taskCompleted', taskNumber);
-      
-      if (nextTask) {
-        if (nextTaskFullContent) {
-          // Extract first uncompleted subtask for focused planning
-          const firstSubtask = TaskGuidanceExtractor.extractFirstSubtask(nextTaskFullContent);
-          
-          // Build guidance text using the template
-          const guidanceText = TaskGuidanceExtractor.buildGuidanceText(
-            nextTaskFullContent,
-            firstSubtask,
-            nextTask.number,
-            false // not first task
-          );
-          
-          displayText += '\n\n' + guidanceText;
-        } else {
-          displayText += `\nTask ${nextTask.number}: ${nextTask.description}`;
-          displayText += `\n\nModel: Please ask user "Ready to start task ${nextTask.number}?"`;
-        }
-      } else {
-        displayText += '\n\n' + TaskGuidanceExtractor.getCompletionMessage('allCompleted');
-      }
-      
-      // Return WorkflowResult format
-      return {
-        displayText,
-        data: {
-          taskCompleted: taskNumber,
-          hasNextTask: nextTask !== null,
-          nextTask: nextTask ? {
-            number: nextTask.number,
-            description: nextTask.description
-          } : null
-        }
-      };
-    }
-
-    // Deep copy example
-    const response = JSON.parse(JSON.stringify(example));
-    
-    // Update actual values
-    response.taskCompleted = taskNumber;
-    response.hasNextTask = nextTask !== null;
-    response.nextTask = nextTask ? {
-      number: nextTask.number,
-      description: nextTask.description
-    } : null;
-
-    // Update display text with enhanced guidance
-    if (nextTask) {
-      let displayText = TaskGuidanceExtractor.getCompletionMessage('taskCompleted', taskNumber);
-      
-      if (nextTaskFullContent) {
-        // Add related requirements if provided
-        let contentWithRequirements = nextTaskFullContent;
-        if (relatedRequirements) {
-          contentWithRequirements += `\n${relatedRequirements}`;
-        }
-        
-        // Extract first uncompleted subtask for focused planning
-        const firstSubtask = TaskGuidanceExtractor.extractFirstSubtask(nextTaskFullContent);
-        
-        // Build guidance text using the template
-        const guidanceText = TaskGuidanceExtractor.buildGuidanceText(
-          contentWithRequirements,
-          firstSubtask,
-          nextTask.number,
-          false // not first task
-        );
-        
-        displayText += '\n\n' + guidanceText;
-      } else {
-        displayText += `\nTask ${nextTask.number}: ${nextTask.description}`;
-        displayText += `\n\nModel: Please ask user "Ready to start task ${nextTask.number}?"`;
-      }
-      
-      response.displayText = displayText;
-    } else {
-      response.displayText = response.displayText
-        .replace(/Task \d+(\.\d+)?/g, `Task ${taskNumber}`);
-    }
-
-    // Embed resources into display text if any (though this response type typically doesn't have resources)
-    const enhancedDisplayText = this.embedResourcesIntoText(response.displayText, response.resources);
-
-    // Return WorkflowResult format
-    return {
-      displayText: enhancedDisplayText,
-      data: response
-    };
-  }
 
   // Private method: embed resources into display text
   private embedResourcesIntoText(displayText: string, resources?: unknown[]): string {
