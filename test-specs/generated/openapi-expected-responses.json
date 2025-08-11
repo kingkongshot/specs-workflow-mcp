@@ -26,35 +26,6 @@
           },
           "displayText": {
             "type": "string"
-          },
-          "resources": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "uri": {
-                  "type": "string",
-                  "description": "Resource URI"
-                },
-                "title": {
-                  "type": "string",
-                  "description": "Optional resource title"
-                },
-                "mimeType": {
-                  "type": "string",
-                  "description": "Resource MIME type"
-                },
-                "text": {
-                  "type": "string",
-                  "description": "Optional resource text content"
-                }
-              },
-              "required": [
-                "uri",
-                "mimeType"
-              ],
-              "additionalProperties": true
-            }
           }
         },
         "required": [
@@ -145,35 +116,6 @@
           },
           "displayText": {
             "type": "string"
-          },
-          "resources": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "uri": {
-                  "type": "string",
-                  "description": "Resource URI"
-                },
-                "title": {
-                  "type": "string",
-                  "description": "Optional resource title"
-                },
-                "mimeType": {
-                  "type": "string",
-                  "description": "Resource MIME type"
-                },
-                "text": {
-                  "type": "string",
-                  "description": "Optional resource text content"
-                }
-              },
-              "required": [
-                "uri",
-                "mimeType"
-              ],
-              "additionalProperties": true
-            }
           }
         },
         "required": [
@@ -236,35 +178,6 @@
           },
           "displayText": {
             "type": "string"
-          },
-          "resources": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "uri": {
-                  "type": "string",
-                  "description": "Resource URI"
-                },
-                "title": {
-                  "type": "string",
-                  "description": "Optional resource title"
-                },
-                "mimeType": {
-                  "type": "string",
-                  "description": "Resource MIME type"
-                },
-                "text": {
-                  "type": "string",
-                  "description": "Optional resource text content"
-                }
-              },
-              "required": [
-                "uri",
-                "mimeType"
-              ],
-              "additionalProperties": true
-            }
           }
         },
         "required": [
@@ -331,35 +244,6 @@
           },
           "displayText": {
             "type": "string"
-          },
-          "resources": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "uri": {
-                  "type": "string",
-                  "description": "Resource URI"
-                },
-                "title": {
-                  "type": "string",
-                  "description": "Optional resource title"
-                },
-                "mimeType": {
-                  "type": "string",
-                  "description": "Resource MIME type"
-                },
-                "text": {
-                  "type": "string",
-                  "description": "Optional resource text content"
-                }
-              },
-              "required": [
-                "uri",
-                "mimeType"
-              ],
-              "additionalProperties": true
-            }
           }
         },
         "required": [
@@ -375,44 +259,6 @@
     }
   },
   "complete_task": {
-    "single": {
-      "schema": {
-        "type": "object",
-        "properties": {
-          "taskCompleted": {
-            "type": "string",
-            "description": "Completed task number"
-          },
-          "hasNextTask": {
-            "type": "boolean",
-            "description": "Whether there is a next task"
-          },
-          "nextTask": {
-            "type": "object",
-            "properties": {
-              "number": {
-                "type": "string"
-              },
-              "description": {
-                "type": "string"
-              }
-            },
-            "required": [],
-            "additionalProperties": true,
-            "nullable": true
-          },
-          "displayText": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "taskCompleted",
-          "displayText"
-        ],
-        "additionalProperties": true
-      },
-      "validation": "json_schema"
-    },
     "batch": {
       "schema": {
         "type": "object",
@@ -515,7 +361,7 @@
   },
   "errors": {
     "invalidPath": {
-      "displayText": "❌ Error: Invalid specification directory\n\nPath ${path} does not exist or is not a valid specification directory.\nPlease ensure the path is correct and has been initialized.\n",
+      "displayText": "❌ Error: Invalid specification directory\n\nPath ${path} does not exist or is not a valid specification directory.\nModel: Please ask user to ensure the path is correct and has been initialized.\n",
       "validation": {
         "isError": true,
         "contentContains": [
@@ -526,14 +372,14 @@
       }
     },
     "alreadyInitialized": {
-      "displayText": "❌ Project already exists\n\n📁 Path: ${path}\n📄 Existing files: ${existingFiles}\n\nPlease choose one of the following actions:\n1. Delete existing files and reinitialize: rm -rf ${path}/*\n2. Initialize in a new directory: use a different path parameter\n3. Continue editing existing project: use action.type=\"check\" to check project status and read existing documents to see if adjustments are needed\n",
+      "displayText": "❌ Project already exists\n\n📁 Path: ${path}\n📄 Existing files: ${existingFiles}\n\nModel: Please ask user to choose one of the following actions:\n1. Delete existing files and reinitialize: rm -rf ${path}/*\n2. Initialize in a new directory: use a different path parameter\n3. Continue editing existing project: use action.type=\"check\" to check project status and read existing documents to see if adjustments are needed\n",
       "validation": {
         "isError": true,
         "contentContains": []
       }
     },
     "missingParameters": {
-      "displayText": "❌ Error: Missing required parameters\n\n${action} operation requires the following parameters:\n${missingParams}\n\nPlease provide complete parameters and try again.\n",
+      "displayText": "❌ Error: Missing required parameters\n\n${action} operation requires the following parameters:\n${missingParams}\n\nModel: Please ask user to provide complete parameters and try again.\n",
       "validation": {
         "isError": true,
         "contentContains": [
@@ -559,11 +405,27 @@
       }
     },
     "taskNotFound": {
-      "displayText": "❌ Error: Task ${taskNumber} not found\n\nPlease check if the task number is correct.\n",
+      "displayText": "❌ Error: Task ${taskNumber} not found\n\nModel: Please ask user to check if the task number is correct.\n",
       "validation": {
         "isError": true,
         "contentContains": [
           "Error"
+        ]
+      }
+    },
+    "projectNotInitialized": {
+      "displayText": "🔧 Project not yet initialized\n\nBefore using other features, model please complete project initialization first:\n\n**Step 1: Call workspace setup**\n```json\n{\n  \"path\": \"${path}\",\n  \"action\": {\n    \"type\": \"setup_workspace\"\n  }\n}\n```\n\nThe system will guide you through language preference setup.\n\n**Why initialization is needed?**\n- Establish a single configuration source to ensure team collaboration consistency\n- Create User Guidelines to let you guide model behavior with natural language\n- Create .specs folder in project root for easy management and maintenance\n\nAfter initialization is complete, model can use init, check, confirm and other features.\n",
+      "validation": {
+        "isError": true,
+        "contentContains": []
+      }
+    },
+    "invalidConfig": {
+      "displayText": "⚠️ Invalid project configuration\n\nConfiguration file found but content is invalid or path is unavailable. Model please reinitialize:\n\n```json\n{\n  \"path\": \"${path}\",\n  \"action\": {\n    \"type\": \"setup_workspace\",\n    \"language\": \"your language preference\"\n  }\n}\n```\n\nThe system will automatically override invalid configuration, no need to delete manually.\n",
+      "validation": {
+        "isError": true,
+        "contentContains": [
+          "Invalid"
         ]
       }
     }

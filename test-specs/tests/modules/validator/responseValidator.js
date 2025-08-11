@@ -42,7 +42,18 @@ export async function validateResponse(testCase, actualResponse, expectedRespons
     return handleUnexpectedError(response, additional_checks);
   }
   
-  // 验证成功响应
+  // 非错误响应必须包含 structuredContent，否则立即失败
+  if (response.structuredContent === undefined) {
+    return {
+      passed: false,
+      errors: ['响应缺少 structuredContent 字段，无法进行结构化校验'],
+      actualResponse: response,
+      expectedResponse: null,
+      openApiValidation: null
+    };
+  }
+
+  // 验证成功响应（需要显式满足 OpenAPI 一致性和附加检查条件）
   return validateSuccessResponse(
     response,
     operation,
@@ -107,28 +118,32 @@ async function validateErrorResponse(response, errorChecks, additionalChecks) {
  * @returns {Promise<Object>} 验证结果
  */
 async function handleUnexpectedError(response, additionalChecks) {
+  // 默认失败：收到非预期错误响应时立即判失败，需要主动满足期望条件才通过
+  const errorText = response?.content?.[0]?.text || 'Unknown error';
   const result = {
-    passed: true,
-    errors: [],
+    passed: false,
+    errors: [
+      '收到非预期错误响应 (isError=true)。请修复服务端错误或在测试用例中显式声明 expect.error=true。',
+      `错误信息: ${errorText}`
+    ],
     warnings: [],
     actualResponse: response,
     expectedResponse: { isError: true },
     openApiValidation: null
   };
-  
-  // 只执行不依赖 structuredContent 的额外检查
+
+  // 仅作为辅助：执行不依赖 structuredContent 的额外检查，便于定位问题，但不改变默认失败结论
   if (additionalChecks) {
     for (const check of additionalChecks) {
       if (!check.path || !check.path.startsWith('structuredContent.')) {
         const checkResult = await performAdditionalCheck(check, response);
         if (!checkResult.passed) {
-          result.passed = false;
           result.errors.push(checkResult.error);
         }
       }
     }
   }
-  
+
   return result;
 }
 

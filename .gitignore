@@ -73,3 +73,4 @@ debug.sh
 push-to-github.sh
 *-token.sh
 *.token
+.clinerules

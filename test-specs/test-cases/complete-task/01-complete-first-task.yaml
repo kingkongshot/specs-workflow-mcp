@@ -40,8 +40,8 @@ expect:
       description: "任务文件中第 1.2 个任务应该被标记为完成"
     - type: "value_equals"
       path: "structuredContent.nextTask.number"
-      value: "1"
-      description: "下一个任务应该是主任务 1（还有 1.3 未完成）"
+      value: "1.3"
+      description: "下一个任务应该是子任务 1.3（下一个未完成的具体任务）"
     - type: "value_equals"
       path: "structuredContent.success"
       value: true

@@ -16,15 +16,28 @@ request:
       path: "./e2e-test-duplicate-numbers"
       action:
         type: "complete_task"
-        taskNumber: "11.1"
+        taskNumber: ["11.1"]
 
 expect:
   operation: "complete_task"
   additional_checks:
-    - type: "value_equals"
-      path: "structuredContent.taskCompleted"
-      value: "11.1"
+    - type: "array_equals"
+
+      path: "structuredContent.completedTasks"
+
+      values: ["11.1"]
+
       description: "任务号应该是 11.1"
+
+    
+
+    - type: "value_equals"
+
+      path: "structuredContent.success"
+
+      value: true
+
+      description: "批量操作应该成功"
     - type: "value_equals"
       path: "structuredContent.hasNextTask"
       value: true

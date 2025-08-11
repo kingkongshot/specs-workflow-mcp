@@ -16,7 +16,7 @@ request:
       path: "./e2e-test-empty-task-list"
       action:
         type: "complete_task"
-        taskNumber: "1"
+        taskNumber: ["1"]
 
 expect:
   operation: "complete_task"
@@ -31,11 +31,16 @@ expect:
       contains: "already completed"
       description: "信息应该提到任务已经完成"
     
+    - type: "array_equals"
+      path: "structuredContent.alreadyCompleted"
+      values: ["1"]
+      description: "任务应该在已完成列表中"
+
     - type: "value_equals"
-      path: "structuredContent.taskCompleted"
-      value: "1"
-      description: "应该返回已完成的任务编号"
-    
+      path: "structuredContent.success"
+      value: true
+      description: "批量操作应该成功"
+
     - type: "value_equals"
       path: "structuredContent.hasNextTask"
       value: false

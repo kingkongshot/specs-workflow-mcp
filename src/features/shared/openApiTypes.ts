@@ -14,7 +14,7 @@ export interface Action {
 }
 
 export interface WorkflowResponse {
-  result: InitResponse | CheckResponse | SkipResponse | ConfirmResponse | CompleteTaskResponse | BatchCompleteTaskResponse;
+  result: InitResponse | CheckResponse | SkipResponse | ConfirmResponse | BatchCompleteTaskResponse;
 }
 
 export interface InitResponse {
@@ -49,12 +49,7 @@ export interface ConfirmResponse {
   resources?: ResourceRef[];
 }
 
-export interface CompleteTaskResponse {
-  taskCompleted: string;  // Completed task number
-  hasNextTask?: boolean;  // Whether there is a next task
-  nextTask?: { number: string; description: string };
-  displayText: string;
-}
+
 
 export interface BatchCompleteTaskResponse {
   success: boolean;  // Whether the batch operation succeeded

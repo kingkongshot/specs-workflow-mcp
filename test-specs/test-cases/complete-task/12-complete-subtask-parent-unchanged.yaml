@@ -16,15 +16,19 @@ request:
       path: "./e2e-test-complete-subtask-parent"
       action:
         type: "complete_task"
-        taskNumber: "1.1"
+        taskNumber: ["1.1"]
 
 expect:
   operation: "complete_task"
   additional_checks:
-    - type: "value_equals"
-      path: "structuredContent.taskCompleted"
-      value: "1.1"
+    - type: "array_equals"
+      path: "structuredContent.completedTasks"
+      values: ["1.1"]
       description: "完成的任务应该是 1.1"
+    - type: "value_equals"
+      path: "structuredContent.success"
+      value: true
+      description: "批量操作应该成功"
     
     # 验证 1.1 被标记为完成
     - type: "file_content"

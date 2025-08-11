@@ -16,7 +16,7 @@ request:
       path: "./e2e-test-complete-exact-match"
       action:
         type: "complete_task"
-        taskNumber: "1"
+        taskNumber: ["1"]
 
 expect:
   operation: "complete_task"

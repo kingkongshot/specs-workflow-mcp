@@ -16,15 +16,28 @@ request:
       path: "./e2e-test-orphan-subtask"
       action:
         type: "complete_task"
-        taskNumber: "15.1"
+        taskNumber: ["15.1"]
 
 expect:
   operation: "complete_task"
   additional_checks:
-    - type: "value_equals"
-      path: "structuredContent.taskCompleted"
-      value: "15.1"
+    - type: "array_equals"
+
+      path: "structuredContent.completedTasks"
+
+      values: ["15.1"]
+
       description: "任务号应该是 15.1"
+
+    
+
+    - type: "value_equals"
+
+      path: "structuredContent.success"
+
+      value: true
+
+      description: "批量操作应该成功"
     - type: "value_equals"
       path: "structuredContent.hasNextTask"
       value: true
@@ -35,7 +48,7 @@ expect:
       description: "孤立子任务应该被标记为完成"
     - type: "value_equals"
       path: "structuredContent.nextTask.number"
-      value: "15"
-      description: "下一个任务应该是虚拟创建的主任务 15"
+      value: "1.1"
+      description: "下一个任务应该是第一个未完成的任务 1.1"
 
 cleanup: ["./e2e-test-orphan-subtask"]

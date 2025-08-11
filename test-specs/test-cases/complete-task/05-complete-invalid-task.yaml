@@ -16,15 +16,15 @@ request:
       path: "./e2e-test-complete-invalid"
       action:
         type: "complete_task"
-        taskNumber: "99"
+        taskNumber: ["99"]
 
 expect:
   operation: "complete_task"
   error: true  # 期望错误响应
   error_checks:
     - type: "error_message"
-      contains: "not found"
-      description: "错误信息应该提到任务未找到"
+      contains: "does not exist"
+      description: "错误信息应该提到任务不存在"
   additional_checks:
     # 验证错误不产生副作用（确保文件未被修改）
     - type: "file_content"

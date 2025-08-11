@@ -56,19 +56,20 @@ export class TaskGuidanceExtractor {
     // Add model prompt based on scenario
     let prompt: string;
     if (isFirstTask) {
-      prompt = template.prompts.firstTask;
+      // Replace firstSubtask placeholder in firstTask prompt
+      prompt = OpenApiLoader.replaceVariables(template.prompts.firstTask, { firstSubtask });
     } else if (taskNumber) {
       // Determine if it's a new task or continuation
       if (taskNumber.includes('.')) {
         // Subtask, use continuation prompt
-        prompt = OpenApiLoader.replaceVariables(template.prompts.continueTask, { taskNumber });
+        prompt = OpenApiLoader.replaceVariables(template.prompts.continueTask, { taskNumber, firstSubtask });
       } else {
         // Main task, use new task prompt
-        prompt = OpenApiLoader.replaceVariables(template.prompts.nextTask, { taskNumber });
+        prompt = OpenApiLoader.replaceVariables(template.prompts.nextTask, { taskNumber, firstSubtask });
       }
     } else {
       // Batch completion scenario, no specific task number
-      prompt = template.prompts.batchContinue;
+      prompt = OpenApiLoader.replaceVariables(template.prompts.batchContinue, { firstSubtask });
     }
     
     parts.push(prompt);
@@ -77,78 +78,77 @@ export class TaskGuidanceExtractor {
   }
   
   /**
-   * Extract the first uncompleted subtask with its context
+   * Extract the first uncompleted task with its context
    */
   static extractFirstSubtask(taskContent: string): string {
     const taskLines = taskContent.split('\n');
-    let firstSubtask = '';
-    let foundTaskNumber = '';
-    
-    for (const line of taskLines) {
-      // More flexible pattern: find checkbox first, then check for subtask number
-      const checkboxMatch = line.match(/\[([xX ])\]/);
-      if (!checkboxMatch) continue;
-      
-      // Skip completed tasks
-      if (checkboxMatch[1].toLowerCase() === 'x') continue;
-      
-      // Check if this is a subtask (has dot in number)
-      const numberMatch = line.match(/(\d+(?:\.\d+)*)/);
-      if (!numberMatch || !numberMatch[1].includes('.')) continue;
-      
-      // Found an uncompleted subtask
-      foundTaskNumber = numberMatch[1];
-      firstSubtask = line.trim();
-      
-      // Determine the depth level of the found task (number of dots)
-      const foundTaskDepth = foundTaskNumber.split('.').length;
-      
-      // Get context from the next few lines
-      const lineIndex = taskLines.indexOf(line);
-      for (let i = lineIndex + 1; i < taskLines.length; i++) {
-        const nextLine = taskLines[i];
-        const trimmedLine = nextLine.trim();
-        
-        // Skip empty lines
-        if (trimmedLine === '') {
+    let firstSubtaskFound = false;
+    let firstSubtaskLines: string[] = [];
+    let currentIndent = '';
+
+    for (let i = 0; i < taskLines.length; i++) {
+      const line = taskLines[i];
+
+      // 忽略空行（但在收集过程中保留）
+      if (!line.trim()) {
+        if (firstSubtaskFound) {
+          firstSubtaskLines.push(line);
+        }
+        continue;
+      }
+
+      // 寻找第一个包含 [ ] 的行（未完成任务）
+      if (line.includes('[ ]') && !firstSubtaskFound) {
+        // 提取任务号验证这是一个子任务（包含点号）
+        const taskMatch = line.match(/(\d+(?:\.\d+)+)\./);
+        if (taskMatch) {
+          firstSubtaskFound = true;
+          firstSubtaskLines.push(line);
+          currentIndent = line.match(/^(\s*)/)?.[1] || '';
           continue;
         }
-        
-        // Check if we hit another task
-        const nextCheckbox = nextLine.match(/\[([xX ])\]/);
-        if (nextCheckbox) {
-          const nextNumberMatch = nextLine.match(/(\d+(?:\.\d+)*)/);
-          if (nextNumberMatch) {
-            const nextTaskNumber = nextNumberMatch[1];
-            const nextTaskDepth = nextTaskNumber.split('.').length;
-            
-            // If the next task is a child of our found task, include it
-            if (nextTaskNumber.startsWith(foundTaskNumber + '.')) {
-              firstSubtask += '\n      ' + trimmedLine;
-              continue;
-            } else {
-              // Otherwise, we've hit a sibling or parent task, stop here
-              break;
-            }
-          }
+      }
+
+      // 如果已经找到第一个子任务，继续收集其详细内容
+      if (firstSubtaskFound) {
+        const lineIndent = line.match(/^(\s*)/)?.[1] || '';
+
+        // 如果遇到同级或更高级的任务，停止收集
+        if (line.includes('[ ]') && lineIndent.length <= currentIndent.length) {
+          break;
         }
-        
-        // Include task details (bullet points, references, etc.)
-        if (trimmedLine.startsWith('-') || 
-            trimmedLine.includes('*Goal*') || 
-            trimmedLine.includes('*Details*') || 
-            trimmedLine.includes('*Requirements*') ||
-            trimmedLine.includes('**Reference**')) {
-          firstSubtask += '\n      ' + trimmedLine;
-        } else if (nextLine.match(/^#{1,3}\s/)) {
-          // Stop if we hit a heading
+
+        // 如果是更深层次的缩进内容，继续收集
+        if (lineIndent.length > currentIndent.length || line.trim().startsWith('-') || line.trim().startsWith('*')) {
+          firstSubtaskLines.push(line);
+        } else {
+          // 遇到非缩进内容，停止收集
           break;
         }
       }
-      break;
     }
-    
-    return firstSubtask;
+
+    // 如果找到了第一个子任务，返回其完整内容
+    if (firstSubtaskLines.length > 0) {
+      return firstSubtaskLines.join('\n').trim();
+    }
+
+    // 如果没有找到子任务，尝试找第一个未完成的任务
+    for (const line of taskLines) {
+      if (!line.trim()) continue;
+
+      if (line.includes('[ ]')) {
+        const taskMatch = line.match(/(\d+(?:\.\d+)*)\.\s*(.+)/);
+        if (taskMatch) {
+          const taskNumber = taskMatch[1];
+          const taskDesc = taskMatch[2].replace(/\*\*|\*/g, '').trim();
+          return `${taskNumber}. ${taskDesc}`;
+        }
+        return line.replace(/[-[\]\s]/g, '').replace(/\*\*|\*/g, '').trim();
+      }
+    }
+
+    return 'Next task';
   }
   
   /**

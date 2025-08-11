@@ -16,15 +16,28 @@ request:
       path: "./e2e-test-same-pattern-isolation"
       action:
         type: "complete_task"
-        taskNumber: "5.1"
+        taskNumber: ["5.1"]
 
 expect:
   operation: "complete_task"
   additional_checks:
-    - type: "value_equals"
-      path: "structuredContent.taskCompleted"
-      value: "5.1"
+    - type: "array_equals"
+
+      path: "structuredContent.completedTasks"
+
+      values: ["5.1"]
+
       description: "完成的任务应该是 5.1"
+
+    
+
+    - type: "value_equals"
+
+      path: "structuredContent.success"
+
+      value: true
+
+      description: "批量操作应该成功"
     
     # 验证 5.1 被标记为完成
     - type: "file_content"

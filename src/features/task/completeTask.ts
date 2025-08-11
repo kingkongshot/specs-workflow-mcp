@@ -1,5 +1,5 @@
 /**
- * Complete task
+ * Complete task - 统一使用批量完成逻辑
  */
 
 import { existsSync, readFileSync, writeFileSync } from 'fs';
@@ -7,7 +7,7 @@ import { join } from 'path';
 import { parseTasksFromContent, getFirstUncompletedTask, formatTaskForFullDisplay, Task } from '../shared/taskParser.js';
 import { responseBuilder } from '../shared/responseBuilder.js';
 import { WorkflowResult } from '../shared/mcpTypes.js';
-import { BatchCompleteTaskResponse, CompleteTaskResponse } from '../shared/openApiTypes.js';
+import { BatchCompleteTaskResponse } from '../shared/openApiTypes.js';
 import { TaskGuidanceExtractor } from '../shared/taskGuidanceTemplate.js';
 
 export interface CompleteTaskOptions {
@@ -17,10 +17,10 @@ export interface CompleteTaskOptions {
 
 export async function completeTask(options: CompleteTaskOptions): Promise<WorkflowResult> {
   const { path, taskNumber } = options;
-  
-  // Normalize input: convert to array for unified processing
+
+  // 统一转换为数组格式进行批量处理
   const taskNumbers = Array.isArray(taskNumber) ? taskNumber : [taskNumber];
-  
+
   if (!existsSync(path)) {
     return {
       displayText: responseBuilder.buildErrorResponse('invalidPath', { path }),
@@ -30,7 +30,7 @@ export async function completeTask(options: CompleteTaskOptions): Promise<Workfl
       }
     };
   }
-  
+
   const tasksPath = join(path, 'tasks.md');
   if (!existsSync(tasksPath)) {
     return {
@@ -41,136 +41,20 @@ export async function completeTask(options: CompleteTaskOptions): Promise<Workfl
       }
     };
   }
-  
-  // Batch processing logic
-  if (taskNumbers.length > 1) {
-    const batchResult = await completeBatchTasks(path, tasksPath, taskNumbers);
-    return {
-      displayText: batchResult.displayText,
-      data: { ...batchResult }
-    };
-  } else {
-    const singleResult = await completeSingleTask(path, tasksPath, taskNumbers[0]);
-    return {
-      displayText: singleResult.displayText,
-      data: { ...singleResult }
-    };
-  }
+
+  // 统一使用批量处理逻辑
+  const batchResult = await completeBatchTasks(tasksPath, taskNumbers);
+  return {
+    displayText: batchResult.displayText,
+    data: { ...batchResult }
+  };
 }
 
-/**
- * Complete a single task
- */
-async function completeSingleTask(path: string, tasksPath: string, taskNumber: string): Promise<CompleteTaskResponse> {
-  // Read tasks file
-  const content = readFileSync(tasksPath, 'utf-8');
-  
-  // Check if task exists
-  const tasksInContent = parseTasksFromContent(content);
-  const targetTask = findTaskByNumber(tasksInContent, taskNumber);
-  
-  if (!targetTask) {
-    throw new Error(responseBuilder.buildErrorResponse('taskNotFound', { taskNumber }));
-  }
-  
-  // If task is already completed, return success (idempotency)
-  if (targetTask.checked) {
-    const allTasks = parseTasksFromContent(content);
-    const nextTask = getFirstUncompletedTask(allTasks);
-    
-    let displayText = TaskGuidanceExtractor.getCompletionMessage('alreadyCompleted', taskNumber);
-    
-    if (nextTask) {
-      const nextTaskFullContent = formatTaskForFullDisplay(nextTask, content);
-      
-      // Extract first uncompleted subtask for focused planning
-      const firstSubtask = TaskGuidanceExtractor.extractFirstSubtask(nextTaskFullContent);
-      
-      // Build guidance text using the template
-      const guidanceText = TaskGuidanceExtractor.buildGuidanceText(
-        nextTaskFullContent,
-        firstSubtask,
-        nextTask.number,
-        false // not first task, continuing
-      );
-      
-      displayText += '\n\n' + guidanceText;
-    } else {
-      displayText += '\n\n' + TaskGuidanceExtractor.getCompletionMessage('allCompleted');
-    }
-    
-    const result: CompleteTaskResponse = {
-      taskCompleted: taskNumber,
-      displayText: displayText,
-      hasNextTask: nextTask !== null,
-      nextTask: nextTask ? {
-        number: nextTask.number,
-        description: nextTask.description
-      } : undefined
-    };
-    return result;
-  }
-  
-  // First check if task can be marked as completed
-  const checkResult = checkTaskCanBeCompleted(content, taskNumber);
-  if (!checkResult.canComplete) {
-    throw new Error(checkResult.errorMessage!);
-  }
-  
-  // Mark task as completed
-  const updatedContent = markTaskAsCompleted(content, taskNumber);
-  
-  if (!updatedContent) {
-    throw new Error(responseBuilder.buildErrorResponse('taskNotFound', { taskNumber }));
-  }
-  
-  // Save updated file
-  writeFileSync(tasksPath, updatedContent, 'utf-8');
-  
-  // Parse updated task list from the updated content (not from file)
-  // This ensures we get the correct state after auto-completing parent tasks
-  const tasks = parseTasksFromContent(updatedContent);
-  const nextTask = getFirstUncompletedTask(tasks);
-  
-  // If completing a subtask, return complete information of the main task
-  let taskToDisplay = nextTask;
-  let nextTaskFullContent = null;
-  
-  if (taskNumber.includes('.')) {
-    // Get main task number
-    const mainTaskNumber = taskNumber.split('.')[0];
-    // Find main task from updated content
-    const mainTask = findTaskByNumber(tasks, mainTaskNumber);
-    if (mainTask && !mainTask.checked) {
-      // If main task is not completed, show it as the next task
-      taskToDisplay = mainTask;
-    }
-  }
-  
-  if (taskToDisplay) {
-    nextTaskFullContent = formatTaskForFullDisplay(taskToDisplay, updatedContent);
-  }
-  
-  const response = responseBuilder.buildCompleteTaskResponse(taskNumber, taskToDisplay, nextTaskFullContent, null);
-  const result: CompleteTaskResponse = {
-    taskCompleted: taskNumber,
-    displayText: response.displayText
-  };
-  if (response.data && 'hasNextTask' in response.data && response.data.hasNextTask) {
-    result.hasNextTask = true;
-    if ('nextTask' in response.data && response.data.nextTask) {
-      result.nextTask = response.data.nextTask as { number: string; description: string };
-    }
-  } else {
-    result.hasNextTask = false;
-  }
-  return result;
-}
 
 /**
  * Complete multiple tasks in batch
  */
-async function completeBatchTasks(path: string, tasksPath: string, taskNumbers: string[]): Promise<BatchCompleteTaskResponse> {
+async function completeBatchTasks(tasksPath: string, taskNumbers: string[]): Promise<BatchCompleteTaskResponse> {
   // Read tasks file
   const originalContent = readFileSync(tasksPath, 'utf-8');
   const tasks = parseTasksFromContent(originalContent);
@@ -312,19 +196,94 @@ async function completeBatchTasks(path: string, tasksPath: string, taskNumbers: 
     
     // Add enhanced guidance for next task
     if (nextTask) {
-      const nextTaskFullContent = formatTaskForFullDisplay(nextTask, currentContent);
-      
-      // Extract first uncompleted subtask for focused planning
-      const firstSubtask = TaskGuidanceExtractor.extractFirstSubtask(nextTaskFullContent);
-      
+      // 获取主任务的完整内容用于显示任务块
+      let mainTask = nextTask;
+      let mainTaskContent = '';
+
+      // 如果当前是子任务，需要找到对应的主任务
+      if (nextTask.number.includes('.')) {
+        const mainTaskNumber = nextTask.number.split('.')[0];
+        const mainTaskObj = allTasks.find(task => task.number === mainTaskNumber);
+        if (mainTaskObj) {
+          mainTask = mainTaskObj;
+          mainTaskContent = formatTaskForFullDisplay(mainTask, currentContent);
+        } else {
+          // 如果找不到主任务，使用当前任务
+          mainTaskContent = formatTaskForFullDisplay(nextTask, currentContent);
+        }
+      } else {
+        // 如果本身就是主任务，直接使用
+        mainTaskContent = formatTaskForFullDisplay(nextTask, currentContent);
+      }
+
+      // 构建下一个具体子任务的描述（用于指导文本）
+      let effectiveFirstSubtask: string;
+      let actualNextSubtask: Task | null = null;
+
+      if (nextTask.number.includes('.')) {
+        // 如果下一个任务是子任务，直接使用
+        actualNextSubtask = nextTask;
+      } else {
+        // 如果下一个任务是主任务，找到第一个未完成的子任务
+        if (mainTask.subtasks && mainTask.subtasks.length > 0) {
+          actualNextSubtask = mainTask.subtasks.find(subtask => !subtask.checked) || null;
+        }
+      }
+
+      if (actualNextSubtask) {
+        // 使用具体的子任务构建指导文本，包含完整内容
+        const nextSubtaskContent = formatTaskForFullDisplay(actualNextSubtask, currentContent);
+
+        if (nextSubtaskContent.trim()) {
+          // 如果能获取到完整内容，直接使用
+          effectiveFirstSubtask = nextSubtaskContent.trim();
+        } else {
+          // 如果获取不到完整内容，手动构建
+          effectiveFirstSubtask = `- [ ] ${actualNextSubtask.number} ${actualNextSubtask.description}`;
+
+          // 从主任务内容中提取这个子任务的详细信息
+          const mainTaskLines = mainTaskContent.split('\n');
+          let capturing = false;
+          let taskIndent = '';
+
+          for (const line of mainTaskLines) {
+            // 找到目标子任务的开始
+            if (line.includes(`${actualNextSubtask.number} ${actualNextSubtask.description}`) ||
+                line.includes(`${actualNextSubtask.number}. ${actualNextSubtask.description}`)) {
+              capturing = true;
+              taskIndent = line.match(/^(\s*)/)?.[1] || '';
+              continue;
+            }
+
+            // 如果正在捕获内容
+            if (capturing) {
+              const lineIndent = line.match(/^(\s*)/)?.[1] || '';
+
+              // 如果遇到下一个任务（同级或更高级），停止捕获
+              if (line.includes('[ ]') && lineIndent.length <= taskIndent.length) {
+                break;
+              }
+
+              // 如果是更深层次的内容，添加到结果中
+              if (lineIndent.length > taskIndent.length && line.trim()) {
+                effectiveFirstSubtask += `\n${line}`;
+              }
+            }
+          }
+        }
+      } else {
+        // 如果找不到具体的子任务，使用主任务
+        effectiveFirstSubtask = `${nextTask.number}. ${nextTask.description}`;
+      }
+
       // Build guidance text using the template
       const guidanceText = TaskGuidanceExtractor.buildGuidanceText(
-        nextTaskFullContent,
-        firstSubtask,
+        mainTaskContent,  // 显示主任务块
+        effectiveFirstSubtask,  // 用于指导文本的具体子任务
         undefined, // no specific task number for batch
         false // not first task
       );
-      
+
       displayText += '\n\n' + guidanceText;
     } else {
       displayText += '\n\n' + TaskGuidanceExtractor.getCompletionMessage('allCompleted');
@@ -364,44 +323,7 @@ async function completeBatchTasks(path: string, tasksPath: string, taskNumbers: 
   }
 }
 
-/**
- * Check if task can be marked as completed
- */
-function checkTaskCanBeCompleted(content: string, taskNumber: string): {
-  canComplete: boolean;
-  errorMessage?: string;
-  errorReason?: string;
-} {
-  const tasks = parseTasksFromContent(content);
-  const targetTask = findTaskByNumber(tasks, taskNumber);
-  
-  if (!targetTask) {
-    return {
-      canComplete: false,
-      errorMessage: responseBuilder.buildErrorResponse('taskNotFound', { taskNumber }),
-      errorReason: 'Task does not exist'
-    };
-  }
-  
-  // Note: Already completed check is now handled before calling this function
-  // No longer checking targetTask.checked here
-  
-  // Check if there are uncompleted subtasks
-  if (targetTask.subtasks && targetTask.subtasks.some(s => !s.checked)) {
-    const uncompletedSubtasks = targetTask.subtasks
-      .filter(s => !s.checked)
-      .map(s => `${s.number}. ${s.description}`)
-      .join('\n  - ');
-    
-    return {
-      canComplete: false,
-      errorMessage: `❌ Error: Task ${taskNumber} has uncompleted subtasks\n\nPlease complete the following subtasks first:\n  - ${uncompletedSubtasks}`,
-      errorReason: 'Has uncompleted subtasks'
-    };
-  }
-  
-  return { canComplete: true };
-}
+
 
 /**
  * Mark task as completed

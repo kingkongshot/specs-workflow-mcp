@@ -16,15 +16,20 @@ request:
       path: "./e2e-test-multilevel"
       action:
         type: "complete_task"
-        taskNumber: "5.1.1"
+        taskNumber: ["5.1.1"]
 
 expect:
   operation: "complete_task"
   additional_checks:
-    - type: "value_equals"
-      path: "structuredContent.taskCompleted"
-      value: "5.1.1"
+    - type: "array_equals"
+      path: "structuredContent.completedTasks"
+      values: ["5.1.1"]
       description: "应该标记任务 5.1.1 为完成"
+
+    - type: "value_equals"
+      path: "structuredContent.success"
+      value: true
+      description: "批量操作应该成功"
     
     - type: "file_content"
       path: "./e2e-test-multilevel/tasks.md"
@@ -34,7 +39,7 @@ expect:
     # 验证主任务信息
     - type: "value_equals"
       path: "structuredContent.nextTask.number"
-      value: "5"
-      description: "应该返回主任务 5 的信息"
+      value: "1.1"
+      description: "应该返回第一个未完成的任务 1.1"
 
 cleanup: ["./e2e-test-multilevel"]

@@ -16,15 +16,28 @@ request:
       path: "./e2e-test-new-format"
       action:
         type: "complete_task"
-        taskNumber: "1.1"
+        taskNumber: ["1.1"]
 
 expect:
   operation: "complete_task"
   additional_checks:
-    - type: "value_equals"
-      path: "structuredContent.taskCompleted"
-      value: "1.1"
+    - type: "array_equals"
+
+      path: "structuredContent.completedTasks"
+
+      values: ["1.1"]
+
       description: "任务号应该是 1.1"
+
+    
+
+    - type: "value_equals"
+
+      path: "structuredContent.success"
+
+      value: true
+
+      description: "批量操作应该成功"
     - type: "value_equals"
       path: "structuredContent.hasNextTask"
       value: true
@@ -35,7 +48,7 @@ expect:
       description: "任务文件中第 1.1 个任务应该被标记为完成"
     - type: "value_equals"
       path: "structuredContent.nextTask.number"
-      value: "1"
-      description: "下一个任务应该是主任务 1（显示主任务进度）"
+      value: "1.2"
+      description: "下一个任务应该是子任务 1.2（下一个未完成的具体任务）"
 
 cleanup: ["./e2e-test-new-format"]
