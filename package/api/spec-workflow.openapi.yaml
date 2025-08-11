@@ -33,11 +33,18 @@ components:
     # Request definitions
     WorkflowRequest:
       type: object
-      required: [path, action]
+      required: [action]
       properties:
-        path:
+        featureName:
           type: string
-          description: Specification directory path (e.g., /Users/link/specs-mcp/batch-log-test)
+          description: |
+            Feature name for the specification (e.g., "用户认证", "order-management").
+
+            **Required for**: init, check, skip, confirm, complete_task operations.
+
+            The system will automatically resolve this to: {specsPath}/{featureName}/
+
+            **For setup_workspace**: Not required - the system uses current working directory as project root.
         action:
           $ref: '#/components/schemas/Action'
     
@@ -47,16 +54,32 @@ components:
       properties:
         type:
           type: string
-          enum: [init, check, skip, confirm, complete_task]
-        featureName:
-          type: string
-          description: Feature name (required for init)
+          enum: [setup_workspace, init, check, skip, confirm, complete_task]
+          description: |
+            Operation type to perform:
+
+            - **setup_workspace**: Initialize project workspace (usually not called directly - MCP will automatically guide model to use this when needed)
+            - **init**: Initialize a new feature specification
+            - **check**: Check current workflow status
+            - **skip**: Skip current stage
+            - **confirm**: Confirm current stage completion
+            - **complete_task**: Mark task(s) as completed
+
         introduction:
           type: string
           description: Feature introduction (required for init)
-        taskNumber:
+        language:
           type: string
-          description: Task number to mark as completed (required for complete_task)
+          description: User preferred language for documentation (required for setup_workspace)
+        taskNumber:
+          oneOf:
+            - type: string
+              description: Single task number to mark as completed
+            - type: array
+              items:
+                type: string
+              description: Multiple task numbers for batch completion
+          description: Task number(s) to mark as completed (required for complete_task)
       
     # Response definitions
     WorkflowResponse:
@@ -65,12 +88,133 @@ components:
       properties:
         result:
           oneOf:
+            - $ref: '#/components/schemas/ProjectInitResponse'
             - $ref: '#/components/schemas/InitResponse'
             - $ref: '#/components/schemas/CheckResponse'
             - $ref: '#/components/schemas/SkipResponse'
             - $ref: '#/components/schemas/ConfirmResponse'
-            - $ref: '#/components/schemas/CompleteTaskResponse'
-    
+            - $ref: '#/components/schemas/BatchCompleteTaskResponse'
+
+    # Project initialization response
+    ProjectInitResponse:
+      type: object
+      required: [success, data, displayText]
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            success:
+              type: boolean
+            needsUserInput:
+              type: boolean
+            missingParams:
+              type: array
+              items:
+                type: string
+            projectRoot:
+              type: string
+            language:
+              type: string
+            userGuidelinesCreated:
+              type: boolean
+            configPath:
+              type: string
+            error:
+              type: string
+            errorType:
+              type: string
+            suggestions:
+              type: array
+              items:
+                type: string
+        displayText:
+          type: string
+      x-dynamic-fields:
+        displayText: ["projectRoot", "language", "configPath", "error", "suggestions"]
+      x-example-selection:
+        criteria:
+          - field: "success"
+            required: true
+          - field: "data.needsUserInput"
+            when: "data.needsUserInput === true"
+          - field: "data.errorType"
+            when: "data.errorType !== undefined"
+      examples:
+        - success: false
+          data:
+            success: false
+            needsUserInput: true
+            missingParams: ["language"]
+          displayText: |
+            🔧 Project initialization requires more information
+
+            Model: Please ask user for their language preference:
+
+            **Language Preference**: I will use (user's preferred language) for document writing - do you agree?
+            - User can respond with: "Chinese", "English", "zh-CN", etc.
+
+            After getting the user's response, model please call setup_workspace again with the language parameter.
+
+            📁 Specification documents will be automatically stored in the .specs folder in the project root directory.
+
+        - success: true
+          data:
+            success: true
+            projectRoot: /project/root
+            language: English
+            userGuidelinesCreated: true
+            configPath: /project/root/.specs/.specs-workflow.json
+          displayText: |
+            ✅ Project initialization successful!
+
+            📁 Project root path: ${projectRoot}
+            📝 Specification documents path: ${projectRoot}/.specs
+            🌐 Documentation language: ${language}
+
+            📋 Created User Guidelines files:
+            - user-guidelines-requirements.md - User preference guide for requirements documents
+            - user-guidelines-design.md - User preference guide for design documents
+            - user-guidelines-tasks.md - User preference guide for task documents
+
+            💡 Model: Please ask user to edit these User Guidelines files to guide the model's behavior. These contents will be automatically displayed when showing the corresponding stage writing guides.
+
+            Model: Please ask user to use the init operation to start creating specific feature specification documents.
+
+        - success: false
+          data:
+            success: false
+            error: "Project already initialized"
+            errorType: "already_initialized"
+            projectRoot: /project/root
+            configPath: /project/root/.specs/.specs-workflow.json
+            suggestions: ["Delete .specs directory and reinitialize", "Or use existing configuration directly"]
+          displayText: |
+            ❌ Project already initialized
+
+            📁 Project root path: ${projectRoot}
+            📝 Configuration file: ${configPath}
+
+            If user needs to reconfigure, model please ask user to delete the .specs directory first, then run setup_workspace again.
+
+        - success: false
+          data:
+            success: false
+            error: "Initialization failed"
+            errorType: "PermissionError"
+            suggestions: ["Check directory permissions", "Run with appropriate privileges", "Contact system administrator"]
+          displayText: |
+            ❌ Project initialization failed
+
+            ${error}
+
+            Suggested solutions:
+            ${suggestions}
+
+            If the problem persists, model please ask user to check system permission settings or contact the system administrator.
+
+
     # Initialization response
     InitResponse:
       type: object
@@ -90,10 +234,12 @@ components:
               const: edit_requirements
         displayText:
           type: string
-        resources:
-          type: array
-          items:
-            $ref: '#/components/schemas/ResourceRef'
+      x-dynamic-fields:
+        displayText: ["featureName", "path", "progress"]
+      x-example-selection:
+        criteria:
+          - field: "success"
+            required: true
       examples:
         - success: true
           data:
@@ -123,8 +269,7 @@ components:
               2. Clearly state the risks: design may deviate from actual requirements, increasing rework costs
               3. Ask the user: "Understanding these risks, are you sure you want to skip the requirements phase?"
               4. Only use action.type="skip" after user explicitly confirms
-          resources:
-            - ref: requirements-guide
+
     
     # Check response
     CheckResponse:
@@ -139,10 +284,14 @@ components:
           $ref: '#/components/schemas/Status'
         displayText:
           type: string
-        resources:
-          type: array
-          items:
-            $ref: '#/components/schemas/ResourceRef'
+      x-dynamic-fields:
+        displayText: ["path", "progress", "featureName"]
+      x-example-selection:
+        criteria:
+          - field: "stage"
+            required: true
+          - field: "status.type"
+            required: true
       examples:
         - stage: requirements
           progress:
@@ -153,6 +302,7 @@ components:
           status:
             type: not_edited
             reason: Requirements document not edited
+            readyToConfirm: false
           displayText: |
             📝 requirements.md has not been written yet
             
@@ -176,8 +326,7 @@ components:
               2. Clearly state the risks: design may deviate from actual requirements, increasing rework costs
               3. Ask the user: "Understanding these risks, are you sure you want to skip the requirements phase?"
               4. Only use action.type="skip" after user explicitly confirms
-          resources:
-            - ref: requirements-guide
+
         
         - stage: requirements
           progress:
@@ -235,8 +384,7 @@ components:
                  - Code structure may lack overall planning
               3. Ask the user: "Understanding these risks, are you sure you want to skip the design phase?"
               4. Only use action.type="skip" after user explicitly confirms
-          resources:
-            - ref: design-guide
+
             
         - stage: design
           progress:
@@ -284,8 +432,7 @@ components:
             3. After completing the document, use specs-workflow tool with action.type="check" to check the document format
             4. When check passes, the model must ask the user "Does the task plan look good?", and continue after getting explicit approval
             5. When the user approves, the model must use the specs-workflow tool with action.type="confirm" to complete the workflow
-          resources:
-            - ref: tasks-guide
+
             
         - stage: tasks
           progress:
@@ -322,6 +469,7 @@ components:
             tasks: 100
           status:
             type: completed
+            readyToConfirm: false
           displayText: |
             ✅ All phases completed!
             
@@ -348,10 +496,12 @@ components:
           $ref: '#/components/schemas/Progress'
         displayText:
           type: string
-        resources:
-          type: array
-          items:
-            $ref: '#/components/schemas/ResourceRef'
+      x-dynamic-fields:
+        displayText: ["stage", "progress"]
+      x-example-selection:
+        criteria:
+          - field: "stage"
+            required: true
       examples:
         - stage: requirements
           skipped: true
@@ -362,15 +512,14 @@ components:
             tasks: 0
           displayText: |
             ⏭️ Skipped requirements phase
-            
+
             📊 Overall progress: ${progress}%
-            
+
             Note: Skipping requirements phase may cause design to deviate from expectations.
             It's recommended to supplement requirements documents later.
-            
-            Now entering design phase, please edit design.md document.
-          resources:
-            - ref: design-guide
+
+            Now entering design phase, model please edit design.md document.
+
             
         - stage: design
           skipped: true
@@ -381,19 +530,18 @@ components:
             tasks: 0
           displayText: |
             ⏭️ Skipped design phase
-            
+
             📊 Overall progress: ${progress}%
-            
+
             Model please inform the user of the following risks:
             ⚠️ Warning: Skipping design phase may cause the following problems:
             - Lack of architectural design may cause implementation direction to deviate
             - May not fully utilize existing features and components
             - Code structure may lack overall planning
-            
+
             It's recommended to gradually supplement design thinking during implementation.
-            Now entering tasks phase, please edit tasks.md document.
-          resources:
-            - ref: tasks-guide
+            Now entering tasks phase, model please edit tasks.md document.
+
             
         - stage: tasks
           skipped: true
@@ -404,20 +552,20 @@ components:
             tasks: 0
           displayText: |
             ⏭️ Skipped tasks phase
-            
+
             📊 Overall progress: ${progress}%
-            
+
             ⚠️ Important Note: Tasks document is essential for development
             - The tasks document defines the specific implementation steps
             - Without it, developers lack clear guidance on what to build
-            - If you're not ready to develop now, you can skip temporarily
-            
+            - If user is not ready to develop now, user can skip temporarily
+
             To write the tasks document later:
             1. Use action.type="check" to review current status
             2. Edit the tasks.md document with implementation details
             3. Confirm when ready to start development
-            
-            The workflow is now complete. You can return to write tasks when ready to begin development.
+
+            The workflow is now complete. User can return to write tasks when ready to begin development.
 
     # Confirm response  
     ConfirmResponse:
@@ -435,10 +583,12 @@ components:
           $ref: '#/components/schemas/Progress'
         displayText:
           type: string
-        resources:
-          type: array
-          items:
-            $ref: '#/components/schemas/ResourceRef'
+      x-dynamic-fields:
+        displayText: ["stage", "nextStage", "progress", "path"]
+      x-example-selection:
+        criteria:
+          - field: "stage"
+            required: true
       examples:
         - stage: requirements
           confirmed: true
@@ -474,8 +624,7 @@ components:
                  - Code structure may lack overall planning
               3. Ask the user: "Understanding these risks, are you sure you want to skip the design phase?"
               4. Only use action.type="skip" after user explicitly confirms
-          resources:
-            - ref: design-guide
+
         
         - stage: design
           confirmed: true
@@ -500,8 +649,7 @@ components:
             3. After completing the document, use specs-workflow tool with action.type="check" to check the document format
             4. When check passes, the model must ask the user "Does the task plan look good?", and continue after getting explicit approval
             5. When the user approves, the model must use the specs-workflow tool with action.type="confirm" to complete the workflow
-          resources:
-            - ref: tasks-guide
+
             
         - stage: tasks
           confirmed: true
@@ -522,17 +670,53 @@ components:
             - ✓ Design document confirmed
             - ✓ Tasks document confirmed
 
-    # Complete task response
-    CompleteTaskResponse:
+
+
+    # Batch complete tasks response
+    BatchCompleteTaskResponse:
       type: object
-      required: [taskCompleted, displayText]
+      required: [success, displayText]
       properties:
-        taskCompleted:
-          type: string
-          description: Completed task number
-        hasNextTask:
+        success:
           type: boolean
-          description: Whether there is a next task
+          description: Whether the batch operation succeeded
+        completedTasks:
+          type: array
+          items:
+            type: string
+          description: Task numbers that were actually completed in this operation
+        alreadyCompleted:
+          type: array
+          items:
+            type: string
+          description: Task numbers that were already completed before this operation
+        failedTasks:
+          type: array
+          items:
+            type: object
+            required: [taskNumber, reason]
+            properties:
+              taskNumber:
+                type: string
+                description: The task number that failed
+              reason:
+                type: string
+                description: The reason why the task could not be completed
+          description: Tasks that could not be completed with reasons
+        results:
+          type: array
+          items:
+            type: object
+            required: [taskNumber, success]
+            properties:
+              taskNumber:
+                type: string
+              success:
+                type: boolean
+              status:
+                type: string
+                enum: [completed, already_completed, failed]
+          description: Detailed results for each task in the batch
         nextTask:
           type: object
           nullable: true
@@ -541,57 +725,84 @@ components:
               type: string
             description:
               type: string
+          description: Information about the next uncompleted task
+        hasNextTask:
+          type: boolean
+          description: Whether there are more tasks to complete
         displayText:
           type: string
+          description: Human-readable message about the batch operation
       examples:
-        - taskCompleted: "1"
-          hasNextTask: true
+        - success: true
+          completedTasks: ["1.1", "1.2", "2.1"]
+          alreadyCompleted: ["1.3"]
+          failedTasks: []
+          results:
+            - taskNumber: "1.1"
+              success: true
+              status: completed
+            - taskNumber: "1.2"
+              success: true
+              status: completed
+            - taskNumber: "1.3"
+              success: true
+              status: already_completed
+            - taskNumber: "2.1"
+              success: true
+              status: completed
           nextTask:
-            number: "2"
-            description: "Implement user authentication feature"
+            number: "2.2"
+            description: "Implement error handling"
+          hasNextTask: true
           displayText: |
-            ✅ Task 1 marked as completed!
-            
-            📋 Next task:
-            - [ ] 2. Validate and generate OpenAPI related code and documentation
-              - Run `npm run openapi:validate` to verify the syntax correctness of the extended specification
-              - Run `npm run generate` to generate updated TypeScript type definitions and documentation
-              - Read the generated documentation to understand the detailed usage guide for new types
-              - Verify that `shared/types/api.generated.ts` contains the new architecture monitoring types
-              - Confirm that the return type of `useGetCoreMetricsQuery` hook has been updated
-              - Check the generated documentation for usage examples of ArchitectureMetrics
-              - _Requirements: 1.1, 2.1, 3.1_
-            
-            Related requirements:
-            📌 Requirement 1.1:
-            1.1. As a system administrator, I want to view architecture health status overview in the Dashboard to quickly understand the running status of various system modules
-               - Display health status of all functional modules (healthy/warning/error)
-               - Show overall architecture score (0-100)
-               - Highlight modules with issues
-            
-            📌 Requirement 2.1:
-            2.1. As a developer, I want to view code generation statistics to understand the usage of AI-generated code
-               - Display the number of generated files for each module
-               - Show statistics of generated code lines
-               - Identify recently generated or modified files
-            
-            📌 Requirement 3.1:
-            3.1. As an architect, I want to monitor architecture evolution trends to make optimization decisions
-               - Display historical trend chart of architecture scores
-               - Show change history of health status for each module
-               - Provide improvement suggestions for problematic modules
-            
-            Model please ask the user: "Ready to start task 2?"
-            
-        - taskCompleted: "3.2"
-          hasNextTask: false
+            ✅ Batch task processing succeeded
+
+            Completed tasks:
+            - 1.1
+            - 1.2
+            - 1.3
+            - 2.1
+
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+            📋 Next task to implement:
+            - [ ] 2.2. Implement error handling
+              - *Goal*: Add comprehensive error handling to the authentication system
+              - *Details*: Implement try-catch blocks, error logging, and user-friendly error messages
+              - *Requirements*: 1.2, 2.3
+
+            ⚠️ IMPORTANT INSTRUCTIONS FOR MODEL:
+            1. [TASK FOCUS] Model MUST follow the workflow instructions to complete the specified task, not plan tasks independently.
+
+            2. [PROGRESS TRACKING] After completing each subtask, model MUST use the specs-workflow tool with complete_task action to mark it complete. DO NOT edit task.md directly.
+            3. [WORKFLOW] Implement task → Call complete_task to mark complete → Get next task automatically → Continue implementation
+
+            Model: Please confirm your preferred execution mode:
+
+            **Confirmation Required**: The model will complete tasks one by one, requiring your confirmation before proceeding to the next task.
+
+            **Automatic Mode**: The model will complete tasks sequentially until all tasks are finished without requiring confirmation for each step.
+
+            After you confirm your preferred approach, I will execute the development work for ${firstSubtask} according to your chosen mode, and immediately use complete_task after completing this specified task to proceed to the next one.
+        - success: false
+          completedTasks: []
+          alreadyCompleted: []
+          failedTasks:
+            - taskNumber: "2.1"
+              reason: "Has uncompleted subtasks"
+            - taskNumber: "99"
+              reason: "Task does not exist"
+          results: []
           nextTask: null
+          hasNextTask: false
           displayText: |
-            ✅ Task 3.2 marked as completed!
+            ❌ Batch task completion failed
             
-            🎉 Congratulations! All tasks completed!
+            The following tasks cannot be completed:
+            - 2.1: Has uncompleted subtasks
+            - 99: Task does not exist
             
-            You have successfully completed all implementation tasks. Project implementation phase completed.
+            Model: Please ask user to resolve these issues and try again.
 
     # Common type definitions
     Stage:
@@ -678,7 +889,7 @@ x-error-responses:
       ❌ Error: Invalid specification directory
       
       Path ${path} does not exist or is not a valid specification directory.
-      Please ensure the path is correct and has been initialized.
+      Model: Please ask user to ensure the path is correct and has been initialized.
   
   alreadyInitialized:
     displayText: |
@@ -687,7 +898,7 @@ x-error-responses:
       📁 Path: ${path}
       📄 Existing files: ${existingFiles}
       
-      Please choose one of the following actions:
+      Model: Please ask user to choose one of the following actions:
       1. Delete existing files and reinitialize: rm -rf ${path}/*
       2. Initialize in a new directory: use a different path parameter
       3. Continue editing existing project: use action.type="check" to check project status and read existing documents to see if adjustments are needed
@@ -699,7 +910,7 @@ x-error-responses:
       ${action} operation requires the following parameters:
       ${missingParams}
       
-      Please provide complete parameters and try again.
+      Model: Please ask user to provide complete parameters and try again.
   
   documentNotEdited:
     displayText: |
@@ -713,6 +924,62 @@ x-error-responses:
       If you want to skip writing this document:
       - Use action.type="skip" to bypass this stage
       - Note: Skipping important documents may impact project quality
+  
+  taskAlreadyCompleted:
+    displayText: |
+      ℹ️ Task ${taskNumber} is already completed
+      
+      This task has already been marked as completed.
+      No action needed.
+  
+  taskNotFound:
+    displayText: |
+      ❌ Error: Task ${taskNumber} not found
+
+      Model: Please ask user to check if the task number is correct.
+
+  projectNotInitialized:
+    displayText: |
+      🔧 Project not yet initialized
+
+      Before using other features, model please complete project initialization first:
+
+      **Step 1: Call workspace setup**
+      ```json
+      {
+        "path": "${path}",
+        "action": {
+          "type": "setup_workspace"
+        }
+      }
+      ```
+
+      The system will guide you through language preference setup.
+
+      **Why initialization is needed?**
+      - Establish a single configuration source to ensure team collaboration consistency
+      - Create User Guidelines to let you guide model behavior with natural language
+      - Create .specs folder in project root for easy management and maintenance
+
+      After initialization is complete, model can use init, check, confirm and other features.
+
+  invalidConfig:
+    displayText: |
+      ⚠️ Invalid project configuration
+
+      Configuration file found but content is invalid or path is unavailable. Model please reinitialize:
+
+      ```json
+      {
+        "path": "${path}",
+        "action": {
+          "type": "setup_workspace",
+          "language": "your language preference"
+        }
+      }
+      ```
+
+      The system will automatically override invalid configuration, no need to delete manually.
 
 
 # Shared resource definitions
@@ -723,7 +990,7 @@ x-shared-resources:
     title: Template Editing Instructions
     mimeType: text/plain
     text: |
-      ⚠️ Important: Please delete all content with <template-*> tags, then start writing formal content.
+      ⚠️ Important: Model please delete all content with <template-*> tags, then start writing formal content.
       These tags are used to detect whether the document has been edited. Keeping these tags will cause the document to be judged as "not edited" status.
   
   # Requirements document example (reuses existing requirements-guide)
@@ -998,11 +1265,11 @@ x-document-templates:
     title: "${featureName} - Task List"
     sections:
       - name: "Implementation Tasks"
-        placeholder: "## Implementation Tasks\n\n<template-tasks>\n- [ ] Task 1\n  - [ ] 1.1 Subtask\n  - [ ] 1.2 Subtask\n- [ ] Task 2\n</template-tasks>"
+        placeholder: "## Implementation Tasks\n\n<template-tasks>\n- [ ] 1. **Main Task 1**\n    - [ ] 1.1. Subtask description\n        - *Goal*: Describe what this task aims to achieve\n        - *Details*: Implementation details and considerations\n        - *Requirements*: Reference to requirement numbers\n    - [ ] 1.2. Subtask description\n        - *Goal*: Describe what this task aims to achieve\n        - *Details*: Implementation details and considerations\n        - *Requirements*: Reference to requirement numbers\n- [ ] 2. **Main Task 2**\n    - [ ] 2.1. Subtask description\n        - *Goal*: Describe what this task aims to achieve\n        - *Details*: Implementation details and considerations\n        - *Requirements*: Reference to requirement numbers\n</template-tasks>"
       - name: "Task Dependencies"
-        placeholder: "## Task Dependencies\n\n<template-tasks>\nList any dependencies between tasks.\n</template-tasks>"
+        placeholder: "## Task Dependencies\n\n<template-tasks>\n- Task 1 must be completed before Task 2\n- Tasks 2.1 and 2.2 can be executed in parallel\n- Task 3 depends on completion of Tasks 1 and 2\n</template-tasks>"
       - name: "Estimated Timeline"
-        placeholder: "## Estimated Timeline\n\n<template-tasks>\nProvide time estimates for major tasks.\n</template-tasks>"
+        placeholder: "## Estimated Timeline\n\n<template-tasks>\n- Task 1: 8 hours\n- Task 2: 12 hours\n- Task 3: 6 hours\n- **Total: 26 hours**\n</template-tasks>"
   
   skipped:
     title: "${featureName} - ${stageName}"
@@ -1012,4 +1279,27 @@ x-document-templates:
       - name: "Reason"
         content: "User chose to skip this stage and proceed directly to next step."
       - name: "Note"
-        content: "To supplement this document, please delete [Skipped] marker and fill in corresponding content."
+        content: "To supplement this document, model please delete [Skipped] marker and fill in corresponding content."
+
+# Task guidance template
+x-task-guidance-template:
+  separator: "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  header: "📋 Next task to implement:"
+  instructions:
+    prefix: "⚠️ IMPORTANT INSTRUCTIONS FOR MODEL:"
+    taskFocus: "1. [TASK FOCUS] Model MUST follow the workflow instructions to complete the specified task, not plan tasks independently."
+    progressTracking: "2. [PROGRESS TRACKING] After completing each subtask, model MUST use the specs-workflow tool with complete_task action to mark it complete. DO NOT edit task.md directly."
+    workflow: "3. [WORKFLOW] Implement task → Call complete_task to mark complete → Get next task automatically → Continue implementation"
+  prompts:
+    firstTask: "Model: Please ask user \"Would you prefer to complete tasks one by one and report progress for your confirmation, or complete tasks sequentially and mark them as done until all tasks are finished at once?\" After user confirms, execute the development work for ${firstSubtask} according to user's preferred approach, and immediately use complete_task after completing this specified task."
+    nextTask: "Model: Please execute the development work for ${firstSubtask} and immediately use complete_task after completing this specified task."
+    continueTask: "Model: Please execute the development work for ${firstSubtask} and immediately use complete_task after completing this specified task."
+    batchContinue: "Model: Please execute the development work for ${firstSubtask} and immediately use complete_task after completing this specified task."
+  completionMessages:
+    taskCompleted: "✅ Task ${taskNumber} marked as completed!"
+    allCompleted: "🎉 Congratulations! All tasks completed!\n\nYou have successfully completed all implementation tasks. Project implementation phase completed."
+    alreadyCompleted: "ℹ️ Task ${taskNumber} is already completed\n\nThis task has already been marked as completed."
+    batchSucceeded: "✅ Batch task processing succeeded"
+    batchCompleted: "ℹ️ Batch task processing completed"
+  batchLabels:
+    completedTasks: "Completed tasks"

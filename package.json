@@ -21,7 +21,8 @@
     "watch": "tsc --watch",
     "inspector": "npx @modelcontextprotocol/inspector node dist/index.js",
     "generate:types": "tsx scripts/generateTypes.ts",
-    "generate:webui": "tsx scripts/generateOpenApiWebUI.ts"
+    "generate:webui": "tsx scripts/generateOpenApiWebUI.ts",
+    "sync:package": "./scripts/sync-package.sh"
   },
   "keywords": [
     "mcp",
