@@ -23,7 +23,11 @@
     "generate:types": "tsx scripts/generateTypes.ts",
     "generate:webui": "tsx scripts/generateOpenApiWebUI.ts",
     "sync:package": "./scripts/sync-package.sh",
-    "publish": "./scripts/publish-npm.sh"
+    "publish": "./scripts/publish-npm.sh",
+    "setup:remote": "./scripts/setup-remote.sh",
+    "remote:info": "node -e \"const {detectRemoteEnvironment,logRemoteEnvironment} = require('./dist/features/shared/remotePathUtils.js'); logRemoteEnvironment();\"",
+    "wsl:test": "./scripts/test-wsl-paths.js",
+    "wsl:info": "node -e \"const {detectRemoteEnvironment,getWSLDistributionInfo} = require('./dist/features/shared/remotePathUtils.js'); const info = detectRemoteEnvironment(); console.log('WSL:', info.isWSL); if(info.isWSL) console.log('Info:', getWSLDistributionInfo());\""
   },
   "keywords": [
     "mcp",

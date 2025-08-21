@@ -20,8 +20,8 @@ test-specs/reports/
 test-specs/node_modules/
 test-specs/temp/
 
-# Documentation
-docs/
+# Documentation (temporary/generated docs only)
+# docs/ - Keep technical documentation
 guidance/zh/
 
 # Build artifacts

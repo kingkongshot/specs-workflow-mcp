@@ -1,15 +1,16 @@
 /**
- * Workflow execution entry point
+ * Workflow execution entry point with remote environment support
  */
 
-import { existsSync } from 'fs';
-import { getWorkflowStatus, getCurrentStage } from './shared/documentStatus.js';
-import { initWorkflow } from './init/initWorkflow.js';
-import { checkWorkflow } from './check/checkWorkflow.js';
-import { skipStage } from './skip/skipStage.js';
-import { confirmStage } from './confirm/confirmStage.js';
-import { completeTask } from './task/completeTask.js';
-import { WorkflowResult } from './shared/mcpTypes.js';
+import { existsSync } from "fs";
+import { getWorkflowStatus, getCurrentStage } from "./shared/documentStatus.js";
+import { initWorkflow } from "./init/initWorkflow.js";
+import { checkWorkflow } from "./check/checkWorkflow.js";
+import { skipStage } from "./skip/skipStage.js";
+import { confirmStage } from "./confirm/confirmStage.js";
+import { completeTask } from "./task/completeTask.js";
+import { resolveRemotePath } from "./shared/remotePathUtils.js";
+import { WorkflowResult } from "./shared/mcpTypes.js";
 
 export interface WorkflowArgs {
   path: string;
@@ -23,63 +24,70 @@ export interface WorkflowArgs {
 
 export async function executeWorkflow(
   args: WorkflowArgs,
-  onProgress?: (progress: number, total: number, message: string) => Promise<void>
+  onProgress?: (
+    progress: number,
+    total: number,
+    message: string
+  ) => Promise<void>
 ): Promise<WorkflowResult> {
-  const { path, action } = args;
-  
+  // Resolve path for remote environment compatibility
+  const resolvedPath = resolveRemotePath(args.path);
+  const { action } = args;
+
   if (!action) {
-    return getStatus(path);
+    return getStatus(resolvedPath);
   }
-  
+
   switch (action.type) {
-    case 'init':
+    case "init":
       if (!action.featureName || !action.introduction) {
         return {
-          displayText: '❌ Initialization requires featureName and introduction parameters',
+          displayText:
+            "❌ Initialization requires featureName and introduction parameters",
           data: {
             success: false,
-            error: 'Missing required parameters'
-          }
+            error: "Missing required parameters",
+          },
         };
       }
       return initWorkflow({
-        path,
+        path: resolvedPath,
         featureName: action.featureName,
         introduction: action.introduction,
-        onProgress
+        onProgress,
       });
-      
-    case 'check':
-      return checkWorkflow({ path, onProgress });
-      
-    case 'skip':
-      return skipStage({ path });
-      
-    case 'confirm':
-      return confirmStage({ path });
-      
-    case 'complete_task':
+
+    case "check":
+      return checkWorkflow({ path: resolvedPath, onProgress });
+
+    case "skip":
+      return skipStage({ path: resolvedPath });
+
+    case "confirm":
+      return confirmStage({ path: resolvedPath });
+
+    case "complete_task":
       if (!action.taskNumber) {
         return {
-          displayText: '❌ Completing task requires taskNumber parameter',
+          displayText: "❌ Completing task requires taskNumber parameter",
           data: {
             success: false,
-            error: 'Missing required parameters'
-          }
+            error: "Missing required parameters",
+          },
         };
       }
       return completeTask({
-        path,
-        taskNumber: action.taskNumber
+        path: resolvedPath,
+        taskNumber: action.taskNumber,
       });
-      
+
     default:
       return {
         displayText: `❌ Unknown operation type: ${action.type}`,
         data: {
           success: false,
-          error: `Unknown operation type: ${action.type}`
-        }
+          error: `Unknown operation type: ${action.type}`,
+        },
       };
   }
 }
@@ -100,14 +108,14 @@ Please use init operation to initialize:
 }
 \`\`\``,
       data: {
-        message: 'Directory does not exist, initialization required'
-      }
+        message: "Directory does not exist, initialization required",
+      },
     };
   }
-  
+
   const status = getWorkflowStatus(path);
   const stage = getCurrentStage(status, path);
-  
+
   return {
     displayText: `📊 Current status
 
@@ -115,8 +123,8 @@ Available operations:
 - check: Check current stage
 - skip: Skip current stage`,
     data: {
-      message: 'Please select an operation',
-      stage
-    }
+      message: "Please select an operation",
+      stage,
+    },
   };
 }
